@@ -35,6 +35,8 @@ Hetzelfde als Modelarr (zie [README.md](README.md)). Daarna:
 3. Maak onder **Instellingen → Gebruikers** de medewerkers aan (rol *Medewerker*, kies de school).
 4. Medewerkers maken zelf leerlingen aan onder **Leerlingen**, één voor één of met een CSV.
 
+Staat de root folder op een NAS-share? Volg dan ook "Share na een herstart" in [README.md](README.md). Is de share niet bereikbaar of onverwacht leeg, dan ziet de beheerder bovenaan een rode balk met het pad. Leerlingen en medewerkers zien alleen een algemene melding, zonder paden van de server. Er wordt in dat geval niets uit de bibliotheek verwijderd.
+
 ### CSV-import van leerlingen
 
 Eerste regel met kolomnamen (`;` of `,`): `naam`, `klas`, optioneel `gebruikersnaam`, `wachtwoord`, `email`. Alleen `naam` is genoeg: de gebruikersnaam wordt dan afgeleid van de naam en het wachtwoord wordt aangemaakt. Na de import zie je de wachtwoorden één keer, met een knop om ze als CSV te downloaden of af te drukken.

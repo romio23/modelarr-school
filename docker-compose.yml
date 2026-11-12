@@ -20,5 +20,7 @@ services:
     volumes:
       - ./config:/config                   # database, thumbnails, instellingen
       - /pad/naar/3d-modellen:/models      # voeg :ro toe als de app niets mag hernoemen
+      #   Staat de map op een NAS-share die op de host gemount is? Gebruik x-systemd.automount in /etc/fstab en laat Docker
+      #   wachten op de share (systemctl edit docker -> After=remote-fs.target). Zie "Share na een herstart" in de README.
       # - /pad/naar/back-ups:/backups     # back-upmap, bij voorkeur buiten de config-map (andere schijf of share)
     restart: unless-stopped

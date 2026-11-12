@@ -10,7 +10,7 @@ import render
 import integrations as INT
 from PIL import Image
 
-VERSION = 'school-0.4.1'
+VERSION = 'school-0.5.0'
 BASE = os.path.dirname(os.path.abspath(__file__))
 CONFIG = os.path.abspath(os.environ.get('CONFIG_DIR', os.path.join(BASE, 'config')))
 BACKUP_ENV = os.environ.get('BACKUP_DIR', '').strip()  # standaard back-upmap (de instelling in de app gaat voor)
@@ -384,6 +384,8 @@ def config_on_network():
 # ---------------------------------------------------------------- scannen
 scan_lock = threading.Lock()
 SCANP = dict(phase='', dirs=0, files=0, added=0, total=0)  # voortgang van de lopende scan (voor de balk in de webinterface)
+ROOT_ALERT = {}  # root_id -> dict(kind, path, known, since, dirs): root folder offline, onverwacht leeg of deels onleesbaar (melding in de webinterface)
+ALERT_RETRY = 60  # seconden: zolang er een melding is, sneller opnieuw scannen zodat de bibliotheek terugkomt zodra de share weer gekoppeld is
 T = dict(scan=dict(last=None, dur=None, running=False), rebuild=dict(last=None), backup=dict(last=None, dur=None), thumbcheck=dict(last=None))
 NEXT, dirty, CUR, OBS = dict(scan=0, soon=0, backup=time.time() + 3600, bambuddy=time.time() + 90), {}, {}, {}
 STABLE = {}  # pad -> (grootte, sinds wanneer onveranderd): netwerk-kopieën behouden vaak een oude mtime
@@ -398,11 +400,42 @@ def walk_top(p, pm=os.path):
     return p + pm.sep if p and pm.splitdrive(p)[0] == p else p
 
 
+def _set_alert(r, kind, known, dirs=0):
+    """Onthoud dat een root folder niet in orde is. Een nieuwe of andere melding komt ook in het logboek."""
+    old = ROOT_ALERT.get(r['id'])
+    if not old or old['kind'] != kind:
+        hist('Root folder', {'offline': f"{r['path']} is niet bereikbaar; de bibliotheek blijft staan tot de map terug is",
+                             'empty': f"{r['path']} lijkt leeg terwijl er {known} modellen bekend zijn (share niet gekoppeld?); niets verwijderd",
+                             'partial': f"{dirs} map(pen) in {r['path']} niet te lezen; modellen daarin blijven staan"}[kind])
+    ROOT_ALERT[r['id']] = dict(kind=kind, path=r['path'], known=known, dirs=dirs, since=old['since'] if old and old['kind'] == kind else time.time())
+    if kind != 'partial':  # offline of leeg: snel opnieuw kijken (goedkoop). Bij onleesbare submappen niet: een volledige scan van een grote share elke minuut is te zwaar
+        NEXT['soon'] = min(NEXT['soon'] or 1e18, time.time() + ALERT_RETRY)
+    bump()
+
+
+def _clear_alert(r):
+    if ROOT_ALERT.pop(r['id'], None):
+        hist('Root folder', f"{r['path']} is weer bereikbaar")
+        log.info('Root folder %s is weer bereikbaar', r['path'])
+        bump()
+
+
+def root_alerts():
+    with db() as c:
+        ids = {x[0] for x in c.execute('SELECT id FROM roots')}
+    for k in [k for k in ROOT_ALERT if k not in ids]:  # root folder intussen verwijderd
+        ROOT_ALERT.pop(k, None)
+    return [dict(id=k, **v) for k, v in sorted(ROOT_ALERT.items())]
+
+
 def _scan_root(r, allowed, min_age):
     root, young, now = r['path'], 0, time.time()
     SCANP['phase'] = 'zoeken'
     if not os.path.isdir(root):
         log.warning('Root folder niet bereikbaar, overgeslagen: %s', root)
+        with db() as c:
+            known = c.execute('SELECT COUNT(*) FROM models WHERE root_id=?', (r['id'],)).fetchone()[0]
+        _set_alert(r, 'offline', known)
         return 0
     zip_on = CFG['zip_support'] == '1'
 
@@ -492,9 +525,20 @@ def _scan_root(r, allowed, min_age):
                     found[k], meta[k] = (x['name'], x['ext'], x['size'], x['mtime']), (zp, x['member'])
         if ex and not found:
             log.warning('Root folder %s lijkt leeg terwijl %d modellen bekend zijn; niets verwijderd (mount offline?)', root, len(ex))
+            _set_alert(r, 'empty', len(ex))
             return 0
 
         gone = {p: x for p, x in ex.items() if p not in found}
+        bad_dirs = [e_.filename for e_ in errs if getattr(e_, 'filename', None)]
+        if bad_dirs:  # een map kon niet gelezen worden (share haperde, rechten): de modellen daarin niet als verwijderd zien
+            def under(p, d):
+                d = os.path.normcase(os.path.normpath(d)); p = os.path.normcase(p)
+                return p == d or p.startswith(d.rstrip('\\/') + os.sep)
+            kept = [p for p, x in gone.items() if any(under(x['container'] or p, d) for d in bad_dirs)]
+            for p in kept:
+                gone.pop(p)
+            if kept:
+                log.warning('Root folder %s: %d model(len) in onleesbare mappen niet verwijderd', root, len(kept))
         bysig = {sig(x['size'], x['mtime'], x['ext'], x['member']): x for x in gone.values()}
         SCANP.update(phase='bijwerken', total=len(found), added=0)
         last_bump, batch = time.time(), 0
@@ -540,6 +584,10 @@ def _scan_root(r, allowed, min_age):
                 os.remove(os.path.join(THUMBS, f"{x['id']}.png"))
             except OSError:
                 pass
+    if errs:
+        _set_alert(r, 'partial', len(ex), len(errs))
+    else:
+        _clear_alert(r)
     if skipped:
         log.warning('Root folder %s: %d bestand(en) overgeslagen omdat ze al bij een andere root folder staan (overlappende root folders?)', root, skipped)
     for e_ in ev:
@@ -1863,7 +1911,10 @@ def rev():
                 w, a = ('', []) if u['role'] == 'admin' else (' AND school_id=?', [u.get('school_id')])
                 ro = c.execute("SELECT COUNT(*) FROM print_requests WHERE status='open'" + w, a).fetchone()[0]
                 rp = c.execute("SELECT COUNT(*) FROM reports r JOIN models m ON m.id=r.model_id WHERE r.status='open'" + w.replace('school_id', 'm.school_id'), a).fetchone()[0]
-    return jsonify(rev=REV, pending=p, failed=f, dups=d, requests_open=ro, reports_open=rp, auth=AUTH_ON[0], scan=dict(SCANP) if T['scan']['running'] and SCANP['phase'] else None)
+    ra = root_alerts()
+    if u and u['role'] != 'admin':  # leerlingen en medewerkers zien alleen dat er iets mis is, niet de paden op de server
+        ra = [dict(id=a['id'], kind=a['kind']) for a in ra]
+    return jsonify(rev=REV, pending=p, failed=f, dups=d, requests_open=ro, reports_open=rp, auth=AUTH_ON[0], scan=dict(SCANP) if T['scan']['running'] and SCANP['phase'] else None, roots_alert=ra)
 
 
 def find_duplicates(rows):
@@ -2617,7 +2668,8 @@ def roots_info():
                 except OSError:
                     pass
             out.append(dict(id=r['id'], path=r['path'], watch=bool(r['watch']), allow_write=bool(r['allow_write']), ok=ok, free=free, total=total,
-                            writable=ok and os.access(r['path'], os.W_OK), count=counts.get(r['id'], 0), live=r['id'] in OBS))
+                            writable=ok and os.access(r['path'], os.W_OK), count=counts.get(r['id'], 0), live=r['id'] in OBS,
+                            alert=(ROOT_ALERT.get(r['id']) or {}).get('kind')))
     return out
 
 

@@ -102,10 +102,10 @@ For a Linux server or a VM with Docker, for example Ubuntu or Debian.
    password=PASSWORD
    EOT
    chmod 600 /root/.smbcred
-   echo '//192.168.1.10/3d /mnt/3d cifs credentials=/root/.smbcred,ro,uid=1000,gid=1000,vers=3.0,iocharset=utf8,nofail,_netdev 0 0' >> /etc/fstab
+   echo '//192.168.1.10/3d /mnt/3d cifs credentials=/root/.smbcred,ro,uid=1000,gid=1000,vers=3.0,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30 0 0' >> /etc/fstab
    systemctl daemon-reload && mount -a && ls /mnt/3d
    ```
-   Remove `ro` if Modelarr may rename files or move them to the trash. `uid=1000,gid=1000` must match `user:` in your compose file. Does it not work? See the table of messages in the LXC guide below: the causes are the same.
+   Remove `ro` if Modelarr may rename files or move them to the trash. `uid=1000,gid=1000` must match `user:` in your compose file. About `x-systemd.automount`: see "Share after a restart" below. Does it not work? See the table of messages in the LXC guide below: the causes are the same.
 5. **Choose a backup folder** and create it, preferably on another disk or a NAS share:
    ```
    mkdir -p /mnt/back-ups/modelarr
@@ -168,13 +168,13 @@ username=YOURUSERNAME
 password=YOURPASSWORD
 EOT
 chmod 600 /root/.smbcred
-echo '//192.168.1.10/3d /mnt/3d-modellen cifs credentials=/root/.smbcred,ro,vers=3.0,iocharset=utf8,nofail,_netdev 0 0' >> /etc/fstab
+echo '//192.168.1.10/3d /mnt/3d-modellen cifs credentials=/root/.smbcred,ro,vers=3.0,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30 0 0' >> /etc/fstab
 systemctl daemon-reload
 mount -a
 ls /mnt/3d-modellen
 ```
 
-The last command must show your folders. `ro` means read-only. If you want Modelarr to be allowed to rename files or move them to the trash, use `rw` and give the account write permission on the Synology.
+The last command must show your folders. `ro` means read-only. `x-systemd.automount` makes sure the share is only mounted when something opens the folder, and that it is tried again later if the NAS was still off at startup (see "Share after a restart" below). If you want Modelarr to be allowed to rename files or move them to the trash, use `rw` and give the account write permission on the Synology.
 
 Is there already a line for this share in `/etc/fstab` and do you want to change an option? Remove the old line (`nano /etc/fstab`), run `umount /mnt/3d-modellen` and then `mount -a`. `mount -o remount` does not work for CIFS options.
 
@@ -207,7 +207,7 @@ hostname -I
 
 ```
 mkdir -p /mnt/back-ups
-echo '//192.168.1.10/Backups /mnt/back-ups cifs credentials=/root/.smbcred,rw,vers=3.0,iocharset=utf8,nofail,_netdev 0 0' >> /etc/fstab
+echo '//192.168.1.10/Backups /mnt/back-ups cifs credentials=/root/.smbcred,rw,vers=3.0,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30 0 0' >> /etc/fstab
 systemctl daemon-reload
 mount -a
 mkdir -p /mnt/back-ups/modelarr
@@ -242,7 +242,26 @@ The database and thumbnails are kept. Your existing `/etc/modelarr.env` is not o
 | `mount error(22): Invalid argument` | Usually a duplicate or incorrect line in `/etc/fstab`, or `mount -o remount` on a CIFS mount. Remove the old line, `umount` and `mount -a`. |
 | `Operation not permitted` | The SMB/CIFS feature is not turned on (step 2), or the container is unprivileged. |
 | `mount: ... could not resolve address` | Check the IP address or name of the NAS and whether the container has network (`ping 192.168.1.10`). |
-| The share is empty after a restart | The NAS was not on yet when the container started. Run `mount -a` and `systemctl restart modelarr`. |
+| The share is empty after a restart | The NAS was not on yet when the container started. Run `mount -a`; Modelarr sees the share again within a minute. Prevent it with `x-systemd.automount` in the fstab line (see below). |
+
+**Share after a restart**
+
+If the NAS is still off (or the network is not ready yet) when the container starts, `nofail` lets the container start anyway, but without the share: `/mnt/3d-modellen` is then an empty folder. That is why:
+
+1. **Use `x-systemd.automount`** in the fstab line, as in step 4. The share is then mounted as soon as Modelarr opens the folder, and tried again on a next attempt. Do you already have an old line without these options? Change it with `nano /etc/fstab`, then run `systemctl daemon-reload`, `umount /mnt/3d-modellen` and `mount -a`.
+2. **The service waits for the network shares.** `install-lxc.sh` puts `After=` and `Wants=remote-fs.target` in the service. Do you run Modelarr with Docker in an LXC (or on another Linux host)? Then make Docker wait too:
+   ```
+   systemctl edit docker
+   ```
+   and add:
+   ```
+   [Unit]
+   After=remote-fs.target
+   Wants=remote-fs.target
+   ```
+   A Docker container that was started while the share was not there yet keeps seeing the empty folder. Fix that with `docker restart modelarr`.
+3. **Modelarr warns you itself.** If a root folder is not reachable, or empty while models are known, a red bar appears at the top of the app and a message in the history. Nothing is removed from the library then, and Modelarr checks again every minute. As soon as the share is back, the message disappears by itself.
+4. **Give the NAS a fixed IP address** (a static DHCP lease in your router), so the address in the fstab line stays correct.
 
 ## Configuration
 | Variable | Default | Meaning |
@@ -279,7 +298,8 @@ If you use [Bambuddy](https://github.com/maziggy/bambuddy) (self-hosted print ma
   (copies over SMB/NFS often keep the old date). A first import therefore takes at least about 10 seconds longer.
 - Symlinks are not followed.
 - Moved/renamed outside the app (same size + date) = same model, categories are kept.
-- If a root folder is empty or offline, nothing is removed from the library.
+- If a root folder is empty or offline, nothing is removed from the library. You then see a red bar at the top of the app and a line in the history; Modelarr checks again every minute and the message disappears as soon as the folder is back.
+- If a subfolder cannot be read during the scan (the share hiccups, no permission), the models in that folder are kept and you also see a message.
 - Folders that start with `.`, `@` or `#` (e.g. Synology `@eaDir`, `#recycle`) are skipped.
 - Check startup time: `journalctl -u modelarr | grep -E "Database gereed|Webserver start|Bestandswachter"` (Docker: `docker logs modelarr`).
 

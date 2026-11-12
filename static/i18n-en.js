@@ -1,6 +1,9 @@
 // Engelse vertaling (gegenereerd). Sleutel = Nederlandse tekst. exact: hele tekst; phrases: zinsdelen binnen een langere tekst; patterns: [regex, vlaggen, vervanging].
 window.I18N_EN = {
 "exact": {
+"leeg (share niet gekoppeld?)": "empty (share not mounted?)",
+"deels onleesbaar": "partly unreadable",
+"De modelbibliotheek is op dit moment niet volledig bereikbaar. Er gaat niets verloren; probeer het later opnieuw.": "The model library is not fully reachable at the moment. Nothing is lost; please try again later.",
 "Leerlingen verwijderen?": "Delete pupils?",
 "Ook alle bestanden van deze leerling(en) verwijderen": "Also delete all files of these pupils",
 "deze leerling": "this pupil",
@@ -1343,6 +1346,13 @@ window.I18N_EN = {
 ]
 ],
 "patterns": [
+["Root folder (.+?) is niet bereikbaar\\. De bibliotheek blijft staan; Modelarr kijkt elke minuut opnieuw\\.", "", "Root folder $1 is not reachable. The library stays as it is; Modelarr checks again every minute."],
+["Root folder (.+?) lijkt leeg terwijl er ([\\d.,]+) modellen bekend zijn\\. Is de share gekoppeld\\? Er is niets verwijderd; Modelarr kijkt elke minuut opnieuw\\.", "", "Root folder $1 looks empty while $2 models are known. Is the share mounted? Nothing was deleted; Modelarr checks again every minute."],
+["([\\d.,]+) map\\(pen\\) in (.+?) konden niet gelezen worden\\. De modellen daarin blijven staan\\.", "", "$1 folder(s) in $2 could not be read. The models in them are kept."],
+["^(.+?) is niet bereikbaar; de bibliotheek blijft staan tot de map terug is$", "", "$1 is not reachable; the library is kept until the folder is back"],
+["^(.+?) lijkt leeg terwijl er (\\d+) modellen bekend zijn \\(share niet gekoppeld\\?\\); niets verwijderd$", "", "$1 looks empty while $2 models are known (share not mounted?); nothing deleted"],
+["^(\\d+) map\\(pen\\) in (.+?) niet te lezen; modellen daarin blijven staan$", "", "$1 folder(s) in $2 could not be read; the models in them are kept"],
+["^(.+?) is weer bereikbaar$", "", "$1 is reachable again"],
 ["^Verwijderen: (.+)\\?$", "", "Delete $1?"],
 ["^Verwijder geselecteerde \\((\\d+)\\)$", "", "Delete selected ($1)"],
 ["^(🗑 )?Verwijder geselecteerde \\((\\d+)\\)$", "", "$1Delete selected ($2)"],
