@@ -10,7 +10,7 @@ import render
 import integrations as INT
 from PIL import Image
 
-VERSION = 'school-0.5.0'
+VERSION = 'school-0.6.0'
 BASE = os.path.dirname(os.path.abspath(__file__))
 CONFIG = os.path.abspath(os.environ.get('CONFIG_DIR', os.path.join(BASE, 'config')))
 BACKUP_ENV = os.environ.get('BACKUP_DIR', '').strip()  # standaard back-upmap (de instelling in de app gaat voor)
@@ -134,6 +134,10 @@ def init():
                 c.execute(f'ALTER TABLE models ADD COLUMN {col} {typ}')
         if 'quota_mb' not in {r[1] for r in c.execute('PRAGMA table_info(schools)')}:
             c.execute('ALTER TABLE schools ADD COLUMN quota_mb INTEGER')  # leeg = algemene instelling
+        if 'share_default' not in {r[1] for r in c.execute('PRAGMA table_info(schools)')}:
+            c.execute('ALTER TABLE schools ADD COLUMN share_default INTEGER')  # uploads van leerlingen standaard delen: 1/0, leeg = algemene instelling
+        if 'share_own' not in {r[1] for r in c.execute('PRAGMA table_info(users)')}:
+            c.execute('ALTER TABLE users ADD COLUMN share_own INTEGER')  # eigen standaard van een leerling (via /api/me/prefs); leeg = die van de school
         if 'staff_group_id' not in {r[1] for r in c.execute('PRAGMA table_info(schools)')}:
             c.execute('ALTER TABLE schools ADD COLUMN staff_group_id TEXT')  # Microsoft-groep van de medewerkers (group_id = leerlingen)
         c.execute("UPDATE users SET role='student' WHERE role='viewer'")  # de schoolversie kent beheerder, medewerker en leerling
@@ -1210,6 +1214,26 @@ def can_manage(u, m):
     return u['role'] == 'staff' and m['school_id'] is not None and u.get('school_id') == m['school_id']
 
 
+def share_default_for(u, schools=None):
+    """Worden nieuwe uploads van deze gebruiker standaard gedeeld? Leerling: de eigen keuze als die is gezet, anders die van de school,
+    anders de algemene instelling (Instellingen → Algemeen). Medewerker en beheerder: hun eigen standaard (standaard aan)."""
+    if u.get('role') != 'student':
+        return bool(u.get('share_default', 1) if u.get('share_default') is not None else 1)
+    if u.get('share_own') is not None:
+        return bool(u['share_own'])
+    sid = u.get('school_id')
+    if sid:
+        if schools is not None:
+            v = schools.get(sid)
+        else:
+            with db() as c:
+                r = c.execute('SELECT share_default FROM schools WHERE id=?', (sid,)).fetchone()
+            v = r['share_default'] if r else None
+        if v is not None:
+            return bool(v)
+    return CFG['default_share'] == '1'
+
+
 def assign_owners():
     """Eigenaar en school van elk model afleiden uit het pad: <school>/leerlingen/<leerling>/... of <school>/medewerkers/<medewerker>/...
     Wordt na elke scan uitgevoerd. Een nieuw model krijgt de standaard-deelkeuze van zijn eigenaar. Geeft het aantal gewijzigde modellen."""
@@ -1220,7 +1244,8 @@ def assign_owners():
         if not by_root:
             return 0
         homes = {}
-        for u in c.execute("SELECT id, home, share_default FROM users WHERE home IS NOT NULL AND home<>''"):
+        sch_share = {r['id']: r['share_default'] for r in c.execute('SELECT id, share_default FROM schools')}
+        for u in c.execute("SELECT id, home, role, school_id, share_default, share_own FROM users WHERE home IS NOT NULL AND home<>''"):
             pr = u['home'].replace('\\', '/').split('/')
             if len(pr) == 3:
                 homes[(pr[0].lower(), pr[1], pr[2].lower())] = u
@@ -1241,7 +1266,7 @@ def assign_owners():
                 if (oid, sid) != (m['owner_id'], m['school_id']):
                     if own and m['owner_id'] is None:
                         up = c.execute('SELECT shared FROM upload_share WHERE path=?', (m['path'],)).fetchone()
-                        sh = up['shared'] if up else (1 if own['share_default'] else 0)
+                        sh = up['shared'] if up else (1 if share_default_for(dict(own), sch_share) else 0)
                         c.execute('UPDATE models SET owner_id=?, school_id=?, shared=? WHERE id=?', (oid, sid, sh, m['id']))
                         c.execute('DELETE FROM upload_share WHERE path=?', (m['path'],))
                     else:
@@ -1305,7 +1330,7 @@ def me_payload(u):
             r = c.execute('SELECT id, name FROM schools WHERE id=?', (u['school_id'],)).fetchone()
         sc = dict(r) if r else None
     return dict(auth=True, version=VERSION, user=u['username'], role=u['role'], id=u['id'], can_download=bool(u['can_download']), can_upload=u['role'] == 'admin' or bool(u.get('can_upload')),
-                display=u.get('display_name') or u['username'], klas=u.get('klas') or '', school=sc, share_default=bool(u.get('share_default', 1)))
+                display=u.get('display_name') or u['username'], klas=u.get('klas') or '', school=sc, share_default=share_default_for(u))
 
 
 @app.get('/api/me')
@@ -2976,7 +3001,7 @@ def upload_targets():
         return jsonify(roots=[dict(id=sroot['id'], name=(g.user.get('display_name') or g.user['username']) if g.user['role'] == 'student' else sroot['school'])],
                        exts=sorted(e[1:] for e in exts()) + (['zip'] if CFG['zip_support'] == '1' else []), max_mb=MAX_MB, scoped=True,
                        quota_mb=quota_mb(sroot_row(g.user)) if g.user['role'] == 'student' else 0, used_mb=round(used / 2 ** 20, 1),
-                       share_default=bool(g.user.get('share_default', 1)))
+                       share_default=share_default_for(g.user))
     out = []
     with db() as c:
         for r in c.execute('SELECT * FROM roots ORDER BY path'):
@@ -3076,7 +3101,7 @@ def upload_post():
         return jsonify(error=ex.strerror or 'Opslaan mislukt'), 500
     if sroot:
         sh = request.form.get('shared')
-        sh = (1 if sh in ('1', 'true', 'on') else 0) if sh is not None else (1 if g.user.get('share_default', 1) else 0)
+        sh = (1 if sh in ('1', 'true', 'on') else 0) if sh is not None else (1 if share_default_for(g.user) else 0)
         with db() as c:
             c.execute('INSERT OR REPLACE INTO upload_share VALUES(?,?,?)', (os.path.join(root['path'], os.path.relpath(final, root['path'])), sh, time.time()))
     if cats:
@@ -3116,7 +3141,7 @@ def model_delete_own(mid):
 
 @app.get('/api/me/prefs')
 def prefs_get():
-    return jsonify(share_default=bool(g.user.get('share_default', 1)))
+    return jsonify(share_default=share_default_for(g.user))
 
 
 @app.post('/api/me/prefs')
@@ -3125,7 +3150,7 @@ def prefs_set():
         return jsonify(error='Geen account'), 400
     sd = 1 if (request.json or {}).get('share_default', True) else 0
     with db() as c:
-        c.execute('UPDATE users SET share_default=? WHERE id=?', (sd, g.user['id']))
+        c.execute('UPDATE users SET share_default=?, share_own=? WHERE id=?', (sd, sd if g.user['role'] == 'student' else None, g.user['id']))
     OKAUTH.clear()
     return jsonify(ok=True, share_default=bool(sd))
 
@@ -3147,7 +3172,7 @@ def schools_list():
             r['students'] = c.execute("SELECT COUNT(*) FROM users WHERE school_id=? AND role='student'", (r['id'],)).fetchone()[0]
             r['staff'] = c.execute("SELECT COUNT(*) FROM users WHERE school_id=? AND role='staff'", (r['id'],)).fetchone()[0]
             r['models'] = c.execute('SELECT COUNT(*) FROM models WHERE school_id=?', (r['id'],)).fetchone()[0]
-    return jsonify(schools=rows, default_quota_mb=int(CFG['student_quota_mb'] or 0))
+    return jsonify(schools=rows, default_quota_mb=int(CFG['student_quota_mb'] or 0), default_share=CFG['default_share'] == '1')
 
 
 def _school_fields(j, cur=None):
@@ -3173,7 +3198,9 @@ def _school_fields(j, cur=None):
         q = None if q in (None, '') else max(0, min(1000000, int(q)))
     except (TypeError, ValueError):
         return None, 'Ongeldige opslaglimiet'
-    return dict(name=name, slug=slug, root_id=root_id, group_id=str(j.get('group_id', cur['group_id'] if cur else '') or '').strip(), staff_group_id=str(j.get('staff_group_id', cur['staff_group_id'] if cur else '') or '').strip(), quota_mb=q,
+    sd = j.get('share_default', cur['share_default'] if cur else None)
+    sd = None if sd in (None, '') else (1 if sd in (True, 1, '1', 'true', 'on', 'ja') else 0)
+    return dict(share_default=sd, name=name, slug=slug, root_id=root_id, group_id=str(j.get('group_id', cur['group_id'] if cur else '') or '').strip(), staff_group_id=str(j.get('staff_group_id', cur['staff_group_id'] if cur else '') or '').strip(), quota_mb=q,
                 active=1 if j.get('active', cur['active'] if cur else 1) else 0), None
 
 
@@ -3195,8 +3222,8 @@ def schools_add():
         return jsonify(error=err), 400
     try:
         with db() as c:
-            sid = c.execute('INSERT INTO schools(name, slug, root_id, group_id, staff_group_id, active, created, quota_mb) VALUES(?,?,?,?,?,?,?,?)',
-                            (f['name'], f['slug'], f['root_id'], f['group_id'], f['staff_group_id'], f['active'], time.time(), f['quota_mb'])).lastrowid
+            sid = c.execute('INSERT INTO schools(name, slug, root_id, group_id, staff_group_id, active, created, quota_mb, share_default) VALUES(?,?,?,?,?,?,?,?,?)',
+                            (f['name'], f['slug'], f['root_id'], f['group_id'], f['staff_group_id'], f['active'], time.time(), f['quota_mb'], f['share_default'])).lastrowid
     except sqlite3.IntegrityError:
         return jsonify(error='Er is al een school met deze naam of map'), 409
     _school_dirs(f)
@@ -3217,7 +3244,7 @@ def schools_put(sid):
         return jsonify(error='De mapnaam kan niet meer wijzigen: er staan al modellen van deze school'), 409
     try:
         with db() as c:
-            c.execute('UPDATE schools SET name=?, slug=?, root_id=?, group_id=?, staff_group_id=?, active=?, quota_mb=? WHERE id=?', (f['name'], f['slug'], f['root_id'], f['group_id'], f['staff_group_id'], f['active'], f['quota_mb'], sid))
+            c.execute('UPDATE schools SET name=?, slug=?, root_id=?, group_id=?, staff_group_id=?, active=?, quota_mb=?, share_default=? WHERE id=?', (f['name'], f['slug'], f['root_id'], f['group_id'], f['staff_group_id'], f['active'], f['quota_mb'], f['share_default'], sid))
     except sqlite3.IntegrityError:
         return jsonify(error='Er is al een school met deze naam of map'), 409
     _school_dirs(f)
@@ -4075,7 +4102,7 @@ def ms_settings():
 @app.get('/api/settings')
 def settings_get():
     return jsonify(scan_interval=int(CFG['scan_interval']), min_age=int(CFG['min_age']), extensions=CFG['extensions'],
-                   thumb_size=int(CFG['thumb_size']), big_mb=int(CFG['big_mb']), student_quota_mb=int(CFG['student_quota_mb']), recent_days=int(CFG['recent_days']), thumb_source=CFG['thumb_source'], thumb_delay=int(CFG['thumb_delay']), spoolman_url=CFG['spoolman_url'], slicer=CFG['slicer'], backup_keep=int(CFG['backup_keep']), backup_thumbs=CFG['backup_thumbs'] == '1', backup_dir=CFG['backup_dir'], backup_dir_now=backup_dir(), bambuddy_url=CFG['bambuddy_url'], bambuddy_key_set=bool(CFG['bambuddy_key']), backup_last=T['backup']['last'], backup_error=T['backup'].get('error'), zip_support=CFG['zip_support'] == '1', api_key=CFG['api_key'], **ms_settings(),
+                   thumb_size=int(CFG['thumb_size']), big_mb=int(CFG['big_mb']), student_quota_mb=int(CFG['student_quota_mb']), default_share=CFG['default_share'] == '1', recent_days=int(CFG['recent_days']), thumb_source=CFG['thumb_source'], thumb_delay=int(CFG['thumb_delay']), spoolman_url=CFG['spoolman_url'], slicer=CFG['slicer'], backup_keep=int(CFG['backup_keep']), backup_thumbs=CFG['backup_thumbs'] == '1', backup_dir=CFG['backup_dir'], backup_dir_now=backup_dir(), bambuddy_url=CFG['bambuddy_url'], bambuddy_key_set=bool(CFG['bambuddy_key']), backup_last=T['backup']['last'], backup_error=T['backup'].get('error'), zip_support=CFG['zip_support'] == '1', api_key=CFG['api_key'], **ms_settings(),
                    host=HOST, port=PORT, version=VERSION)
 
 
@@ -4140,6 +4167,8 @@ def settings_post():
         return jsonify(error=err), 400
     if 'backup_thumbs' in j:
         put('backup_thumbs', '1' if j['backup_thumbs'] else '0')
+    if 'default_share' in j:
+        put('default_share', '1' if j['default_share'] else '0')
     if 'backup_dir' in j:
         p = str(j['backup_dir'] or '').strip()
         if p != CFG['backup_dir']:

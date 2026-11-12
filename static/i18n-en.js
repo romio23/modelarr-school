@@ -1,6 +1,12 @@
 // Engelse vertaling (gegenereerd). Sleutel = Nederlandse tekst. exact: hele tekst; phrases: zinsdelen binnen een langere tekst; patterns: [regex, vlaggen, vervanging].
 window.I18N_EN = {
 "exact": {
+"Uploads van leerlingen": "Student uploads",
+"standaard delen met andere leerlingen en scholen": "share with other students and schools by default",
+"Geldt voor scholen zonder eigen keuze (Instellingen → Scholen). Een leerling kan delen bij het uploaden en per model nog aan- of uitzetten. Bestaande modellen veranderen niet.": "Applies to schools without their own choice (Settings → Schools). A student can still turn sharing on or off when uploading and per model. Existing models do not change.",
+"Uploads delen": "Share uploads",
+"Standaard aan": "On by default",
+"Standaard uit": "Off by default",
 "leeg (share niet gekoppeld?)": "empty (share not mounted?)",
 "deels onleesbaar": "partly unreadable",
 "De modelbibliotheek is op dit moment niet volledig bereikbaar. Er gaat niets verloren; probeer het later opnieuw.": "The model library is not fully reachable at the moment. Nothing is lost; please try again later.",
@@ -1346,6 +1352,8 @@ window.I18N_EN = {
 ]
 ],
 "patterns": [
+["^Bij Uploads delen kies je of nieuwe uploads van leerlingen standaard gedeeld worden; \"Algemeen\" volgt de instelling onder Algemeen \\(nu: aan\\)\\.$", "", "Under Share uploads you choose whether new student uploads are shared by default; \"General\" follows the setting under General (now: on)."],
+["^Bij Uploads delen kies je of nieuwe uploads van leerlingen standaard gedeeld worden; \"Algemeen\" volgt de instelling onder Algemeen \\(nu: uit\\)\\.$", "", "Under Share uploads you choose whether new student uploads are shared by default; \"General\" follows the setting under General (now: off)."],
 ["Root folder (.+?) is niet bereikbaar\\. De bibliotheek blijft staan; Modelarr kijkt elke minuut opnieuw\\.", "", "Root folder $1 is not reachable. The library stays as it is; Modelarr checks again every minute."],
 ["Root folder (.+?) lijkt leeg terwijl er ([\\d.,]+) modellen bekend zijn\\. Is de share gekoppeld\\? Er is niets verwijderd; Modelarr kijkt elke minuut opnieuw\\.", "", "Root folder $1 looks empty while $2 models are known. Is the share mounted? Nothing was deleted; Modelarr checks again every minute."],
 ["([\\d.,]+) map\\(pen\\) in (.+?) konden niet gelezen worden\\. De modellen daarin blijven staan\\.", "", "$1 folder(s) in $2 could not be read. The models in them are kept."],
