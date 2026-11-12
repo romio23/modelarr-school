@@ -24,7 +24,12 @@ Alle scholen delen één root folder. Per school en per gebruiker is er een map:
 <root>/<school>/.aanvragen/<id>/…          (gesliced bestand bij een printaanvraag, verborgen)
 ```
 
-Modellen buiten de schoolmappen vormen de **algemene bibliotheek**: ze zijn voor iedereen zichtbaar. Een medewerker of beheerder kan onder **Mappen** een map (met alles daarin) verbergen voor leerlingen. De eigenaar van een model in een schoolmap volgt uit de map waarin het staat. Delen aan of uit is alleen een vinkje in de database: er worden geen bestanden verplaatst. Een nieuw model is standaard gedeeld; een gebruiker kan dat per model of als standaard uitzetten.
+Modellen buiten de schoolmappen vormen de **algemene bibliotheek**: ze zijn voor iedereen zichtbaar. Een medewerker of beheerder kan onder **Mappen** een map (met alles daarin) verbergen voor leerlingen. De eigenaar van een model in een schoolmap volgt uit de map waarin het staat. Delen aan of uit is alleen een vinkje in de database: er worden geen bestanden verplaatst. Of een nieuw model van een leerling standaard gedeeld wordt, stel je in:
+
+- **Instellingen → Algemeen → Uploads van leerlingen**: de algemene keuze, standaard aan.
+- **Instellingen → Scholen → Uploads delen**: per school *Algemeen* (volgt de algemene keuze), *Standaard aan* of *Standaard uit*.
+
+Een leerling kan delen bij het uploaden en per model nog aan- of uitzetten. De instelling geldt ook voor bestanden die rechtstreeks in de map van een leerling worden gezet, bijvoorbeeld via de share. Bestaande modellen veranderen niet als je de instelling wijzigt. Modellen van medewerkers zijn standaard gedeeld.
 
 ## Installeren
 
