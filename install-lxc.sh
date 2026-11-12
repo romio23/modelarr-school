@@ -35,6 +35,7 @@ cat > /etc/systemd/system/modelarr.service <<'UNIT'
 [Unit]
 Description=Modelarr
 After=network-online.target remote-fs.target
+Wants=network-online.target remote-fs.target
 
 [Service]
 EnvironmentFile=/etc/modelarr.env

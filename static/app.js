@@ -129,12 +129,24 @@ function staffPopup(r) {
   } else if (el && !rq && !rp) el.remove();
   try { sessionStorage.setItem('popseen', JSON.stringify(seen)); } catch (_) { /* privévenster */ }
 }
+// melding als een root folder offline, leeg (share niet gekoppeld) of deels onleesbaar is: anders lijkt de bibliotheek zomaar leeg
+function rootAlert(list) {
+  const e = $('#rootalert'); if (!e) return;
+  const n = v => Number(v).toLocaleString(I18N.LOC);
+  const msg = a => a.kind === 'offline' ? `⚠ Root folder ${esc(a.path)} is niet bereikbaar. De bibliotheek blijft staan; Modelarr kijkt elke minuut opnieuw.`
+    : a.kind === 'empty' ? `⚠ Root folder ${esc(a.path)} lijkt leeg terwijl er ${n(a.known)} modellen bekend zijn. Is de share gekoppeld? Er is niets verwijderd; Modelarr kijkt elke minuut opnieuw.`
+    : `⚠ ${n(a.dirs)} map(pen) in ${esc(a.path)} konden niet gelezen worden. De modellen daarin blijven staan.`;
+  const html = adm() ? (list || []).map(a => `<div>${msg(a)} <a href="#/settings/media">Root folders</a></div>`).join('')
+    : (list || []).length ? '<div>⚠ De modelbibliotheek is op dit moment niet volledig bereikbaar. Er gaat niets verloren; probeer het later opnieuw.</div>' : '';
+  if (e.dataset.h !== html) { e.dataset.h = html; e.innerHTML = html; }
+  e.style.display = html ? 'block' : 'none';
+}
 async function poll() {
   if (ME.auth && !ME.user) return;  // niet ingelogd: de inlogpagina niet steeds opnieuw laten tekenen
   try {
     const r = await api('/api/rev');
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
-    set('#qb', r.pending || ''); set('#rqb', r.requests_open || ''); set('#rpb', r.reports_open || ''); set('#wb', r.failed || ''); set('#db', r.dups || ''); staffPopup(r); scanBar(r.scan); $('#banner').style.display = (r.auth || !adm()) ? 'none' : 'block';
+    set('#qb', r.pending || ''); set('#rqb', r.requests_open || ''); set('#rpb', r.reports_open || ''); set('#wb', r.failed || ''); set('#db', r.dups || ''); staffPopup(r); scanBar(r.scan); rootAlert(r.roots_alert); $('#banner').style.display = (r.auth || !adm()) ? 'none' : 'block';
     if (lastRev !== null && r.rev !== lastRev && onRev) { inAuto = true; try { await onRev(); } finally { inAuto = false; } }
     lastRev = r.rev;
   } catch (e) { /* server tijdelijk weg */ }
@@ -673,7 +685,7 @@ V['settings/media'] = async () => {
   const load = run(async () => {
     const [roots, s] = await Promise.all([api('/api/roots'), api('/api/settings')]);
     $('#view').innerHTML = `<h3>Root folders</h3><p class="dim">Mappen met 3D-modellen. Elke root wordt gescand en live in de gaten gehouden; nieuwe bestanden komen automatisch in de bibliotheek met een thumbnail. Standaard wordt er alleen geïndexeerd: hernoemen en verplaatsen (ook naar de prullenbak) zet je per root folder aan.</p>`
-      + (roots.length ? tbl(['Pad', 'Status', 'Vrije ruimte', 'Modellen', 'Wachter', 'Bestanden wijzigen', ''], roots.map(r => `<tr><td>${esc(r.path)}</td><td class="${r.ok ? 'ok' : 'err'}">${r.ok ? (r.writable ? '✓ bereikbaar' : '✓ alleen-lezen') : '✗ niet bereikbaar'}</td><td>${fsize(r.free)}</td><td>${r.count}</td><td><label><input type="checkbox" data-w="${r.id}" ${r.watch ? 'checked' : ''}> ${r.live ? 'live' : r.watch ? 'alleen scannen' : 'uit'}</label></td><td><label><input type="checkbox" data-aw="${r.id}" ${r.allow_write ? 'checked' : ''}> Toestaan</label><br><small class="${r.allow_write ? 'warn' : 'dim'}">${r.allow_write ? 'Bestanden mogen hernoemd en naar de prullenbak verplaatst worden' : 'Alleen lezen: Modelarr verandert niets aan je bestanden'}</small></td><td><button data-mv="${r.id}" data-p="${esc(r.path)}">Pad wijzigen</button> <button class="d" data-del="${r.id}">Verwijderen</button></td></tr>`)) : '<p class="empty">Nog geen root folders.</p>')
+      + (roots.length ? tbl(['Pad', 'Status', 'Vrije ruimte', 'Modellen', 'Wachter', 'Bestanden wijzigen', ''], roots.map(r => `<tr><td>${esc(r.path)}</td><td class="${!r.ok ? 'err' : r.alert ? 'warn' : 'ok'}">${!r.ok ? '✗ niet bereikbaar' : r.alert === 'empty' ? '⚠ leeg (share niet gekoppeld?)' : r.alert === 'partial' ? '⚠ deels onleesbaar' : r.writable ? '✓ bereikbaar' : '✓ alleen-lezen'}</td><td>${fsize(r.free)}</td><td>${r.count}</td><td><label><input type="checkbox" data-w="${r.id}" ${r.watch ? 'checked' : ''}> ${r.live ? 'live' : r.watch ? 'alleen scannen' : 'uit'}</label></td><td><label><input type="checkbox" data-aw="${r.id}" ${r.allow_write ? 'checked' : ''}> Toestaan</label><br><small class="${r.allow_write ? 'warn' : 'dim'}">${r.allow_write ? 'Bestanden mogen hernoemd en naar de prullenbak verplaatst worden' : 'Alleen lezen: Modelarr verandert niets aan je bestanden'}</small></td><td><button data-mv="${r.id}" data-p="${esc(r.path)}">Pad wijzigen</button> <button class="d" data-del="${r.id}">Verwijderen</button></td></tr>`)) : '<p class="empty">Nog geen root folders.</p>')
       + `<div class="row" style="max-width:720px"><button class="p" id="addroot">+ Map kiezen…</button><input id="newroot" placeholder="of typ/plak een pad, bijv. D:&#92;3D of &#92;&#92;nas&#92;modellen"><button id="addtyped">Toevoegen</button></div>
 <h3>Scannen &amp; thumbnails</h3><div class="form">
 <label>Scaninterval (minuten)</label><input type="number" id="s1" min="1" value="${s.scan_interval}"><small>Extra vangnet naast de live wachter, nodig voor NFS/SMB-shares.</small>

@@ -103,10 +103,10 @@ Voor een Linux-server of een VM met Docker, bijvoorbeeld Ubuntu of Debian.
    password=WACHTWOORD
    EOT
    chmod 600 /root/.smbcred
-   echo '//192.168.1.10/3d /mnt/3d cifs credentials=/root/.smbcred,ro,uid=1000,gid=1000,vers=3.0,iocharset=utf8,nofail,_netdev 0 0' >> /etc/fstab
+   echo '//192.168.1.10/3d /mnt/3d cifs credentials=/root/.smbcred,ro,uid=1000,gid=1000,vers=3.0,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30 0 0' >> /etc/fstab
    systemctl daemon-reload && mount -a && ls /mnt/3d
    ```
-   Haal `ro` weg als Modelarr bestanden mag hernoemen of naar de prullenbak verplaatsen. `uid=1000,gid=1000` moet overeenkomen met `user:` in je compose-bestand. Werkt het niet? Zie de tabel met meldingen bij de LXC-handleiding hieronder: de oorzaken zijn dezelfde.
+   Haal `ro` weg als Modelarr bestanden mag hernoemen of naar de prullenbak verplaatsen. `uid=1000,gid=1000` moet overeenkomen met `user:` in je compose-bestand. Over `x-systemd.automount`: zie "Share na een herstart" hieronder. Werkt het niet? Zie de tabel met meldingen bij de LXC-handleiding hieronder: de oorzaken zijn dezelfde.
 5. **Een back-upmap kiezen** en maken, het liefst op een andere schijf of een NAS-share:
    ```
    mkdir -p /mnt/back-ups/modelarr
@@ -169,13 +169,13 @@ username=JOUWGEBRUIKER
 password=JOUWWACHTWOORD
 EOT
 chmod 600 /root/.smbcred
-echo '//192.168.1.10/3d /mnt/3d-modellen cifs credentials=/root/.smbcred,ro,vers=3.0,iocharset=utf8,nofail,_netdev 0 0' >> /etc/fstab
+echo '//192.168.1.10/3d /mnt/3d-modellen cifs credentials=/root/.smbcred,ro,vers=3.0,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30 0 0' >> /etc/fstab
 systemctl daemon-reload
 mount -a
 ls /mnt/3d-modellen
 ```
 
-De laatste opdracht moet je mappen laten zien. `ro` betekent alleen lezen. Wil je dat Modelarr bestanden mag hernoemen of naar de prullenbak verplaatsen, gebruik dan `rw` en geef het account schrijfrechten op de Synology.
+De laatste opdracht moet je mappen laten zien. `ro` betekent alleen lezen. `x-systemd.automount` zorgt dat de share pas gekoppeld wordt als iets de map opent, en dat het later opnieuw geprobeerd wordt als de NAS bij het opstarten nog uit stond (zie "Share na een herstart" hieronder). Wil je dat Modelarr bestanden mag hernoemen of naar de prullenbak verplaatsen, gebruik dan `rw` en geef het account schrijfrechten op de Synology.
 
 Staat er al een regel voor deze share in `/etc/fstab` en wil je een optie wijzigen? Verwijder de oude regel (`nano /etc/fstab`), draai `umount /mnt/3d-modellen` en daarna `mount -a`. `mount -o remount` werkt niet voor CIFS-opties.
 
@@ -208,7 +208,7 @@ hostname -I
 
 ```
 mkdir -p /mnt/back-ups
-echo '//192.168.1.10/Backups /mnt/back-ups cifs credentials=/root/.smbcred,rw,vers=3.0,iocharset=utf8,nofail,_netdev 0 0' >> /etc/fstab
+echo '//192.168.1.10/Backups /mnt/back-ups cifs credentials=/root/.smbcred,rw,vers=3.0,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30 0 0' >> /etc/fstab
 systemctl daemon-reload
 mount -a
 mkdir -p /mnt/back-ups/modelarr
@@ -243,7 +243,26 @@ Database en thumbnails blijven bewaard. Je bestaande `/etc/modelarr.env` wordt n
 | `mount error(22): Invalid argument` | Meestal een dubbele of onjuiste regel in `/etc/fstab`, of `mount -o remount` op een CIFS-koppeling. Verwijder de oude regel, `umount` en `mount -a`. |
 | `Operation not permitted` | De feature SMB/CIFS staat niet aan (stap 2), of de container is unprivileged. |
 | `mount: ... could not resolve address` | Controleer het IP-adres of de naam van de NAS en of de container netwerk heeft (`ping 192.168.1.10`). |
-| De share is leeg na een herstart | De NAS stond nog niet aan toen de container opstartte. Draai `mount -a` en `systemctl restart modelarr`. |
+| De share is leeg na een herstart | De NAS stond nog niet aan toen de container opstartte. Draai `mount -a`; Modelarr ziet de share binnen een minuut terug. Voorkom het met `x-systemd.automount` in de fstab-regel (zie hieronder). |
+
+**Share na een herstart**
+
+Staat de NAS nog uit (of is het netwerk nog niet klaar) als de container opstart, dan zorgt `nofail` dat de container gewoon doorstart, maar zonder share: `/mnt/3d-modellen` is dan een lege map. Daarom:
+
+1. **Gebruik `x-systemd.automount`** in de fstab-regel, zoals in stap 4. De share wordt dan gekoppeld zodra Modelarr de map opent, en bij een volgende poging opnieuw geprobeerd. Heb je al een oude regel zonder deze opties? Pas hem aan met `nano /etc/fstab` en draai daarna `systemctl daemon-reload`, `umount /mnt/3d-modellen` en `mount -a`.
+2. **De service wacht op de netwerkshares.** `install-lxc.sh` zet `After=` en `Wants=remote-fs.target` in de service. Draai je Modelarr met Docker in een LXC (of op een andere Linux-host)? Laat Docker dan ook wachten:
+   ```
+   systemctl edit docker
+   ```
+   en zet erin:
+   ```
+   [Unit]
+   After=remote-fs.target
+   Wants=remote-fs.target
+   ```
+   Een Docker-container die gestart is terwijl de share er nog niet was, blijft namelijk de lege map zien. Herstel dat met `docker restart modelarr`.
+3. **Modelarr waarschuwt zelf.** Is een root folder niet bereikbaar, of leeg terwijl er modellen bekend zijn, dan verschijnt er een rode balk bovenaan de app en een melding in de geschiedenis. Er wordt dan niets uit de bibliotheek verwijderd, en Modelarr kijkt elke minuut opnieuw. Zodra de share terug is, verdwijnt de melding vanzelf.
+4. **Geef de NAS een vast IP-adres** (een statische DHCP-lease in je router), zodat het adres in de fstab-regel blijft kloppen.
 
 ## Configuratie
 | Variabele | Standaard | Betekenis |
@@ -280,7 +299,8 @@ Heb je [Bambuddy](https://github.com/maziggy/bambuddy) (zelf gehoste printbeheer
   (kopieën via SMB/NFS behouden vaak de oude datum). Een eerste import duurt daarom minstens ±10 sec langer.
 - Symlinks worden niet gevolgd.
 - Verplaatst/hernoemd buiten de app (zelfde grootte + datum) = zelfde model, categorieën blijven.
-- Is een root folder leeg of offline, dan wordt er niets uit de bibliotheek verwijderd.
+- Is een root folder leeg of offline, dan wordt er niets uit de bibliotheek verwijderd. Je ziet dan een rode balk bovenaan de app en een regel in de geschiedenis; Modelarr kijkt elke minuut opnieuw en de melding verdwijnt zodra de map terug is.
+- Kan een submap tijdens de scan niet gelezen worden (share hapert, geen rechten), dan blijven de modellen in die map staan en zie je ook een melding.
 - Mappen die beginnen met `.`, `@` of `#` (o.a. Synology `@eaDir`, `#recycle`) worden overgeslagen.
 - Opstarttijd controleren: `journalctl -u modelarr | grep -E "Database gereed|Webserver start|Bestandswachter"` (Docker: `docker logs modelarr`).
 
