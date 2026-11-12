@@ -1,0 +1,25 @@
+const t=(n,ok)=>console.log(ok?'OK  ':'FOUT',n);
+let users=[{id:1,username:'baas',email:'',role:'admin',can_download:true,can_upload:false,active:true,me:true},{id:2,username:'gast',email:'',role:'student',can_download:true,can_upload:true,active:true}];
+apiImpl=async(u,m,b)=>u==='/api/users'&&m==='GET'?users:u==='/api/schools'?{schools:[]}:{};
+await V['settings/users']();
+let h=out['#view'].innerHTML;
+t('gebruikers: kolom Uploaden; beheerder "altijd", gast heeft een vinkje', h.includes('Uploaden')&&h.includes('altijd')&&h.includes('data-up="2" checked')&&!h.includes('data-up="1"'));
+t('nieuwe gebruiker: keuze "mag uploaden"', h.includes('id="nu2"'));
+apiCalls.length=0; await out['#view'].onchange({target:{dataset:{up:'2'},checked:false}});
+t('vinkje uploaden zet can_upload via de API', apiCalls.some(c=>c[0]==='/api/users/2'&&c[1]==='PUT'&&c[2].can_upload===false));
+// verkenner in het uploadvenster
+ME={auth:true,user:'baas',role:'admin',can_download:true,can_upload:true};
+const dirs={'':['Auto','Bambu','Lego','Legoland'],'Lego':['Technic']};
+let tgt={roots:[{id:1,name:'3d-modellen'}],exts:['stl','3mf'],max_mb:400};
+apiImpl=async(u)=>u==='/api/upload/targets'?tgt:u.startsWith('/api/upload/dirs')?{dirs:dirs[decodeURIComponent(u.split('path=')[1]||'')]||[]}:{};
+let up; const mk0=document.createElement; document.createElement=()=>{up=mk0(); up.remove=()=>{}; up._q={}; up.querySelector=q=>up._q[q]||(up._q[q]={innerHTML:'',disabled:false,textContent:''}); return up;};
+openUpload([{id:1,name:'Rek'}]);
+await new Promise(r=>setTimeout(r,50));
+t('uploadvenster: scrolbare lijst met mappen, zoekveld en kruimelpad (geen muur van knoppen)', up&&up.innerHTML.includes('id="udl"')&&up.innerHTML.includes('id="uq"')&&up.innerHTML.includes('data-dir="Auto"')&&up.innerHTML.includes('overflow:auto'));
+up.oninput({target:{id:'uq',value:'lego'}});
+const lst=up._q['#udl'].innerHTML;
+t('zoeken filtert de mappenlijst', lst.includes('data-dir="Lego"')&&lst.includes('data-dir="Legoland"')&&!lst.includes('data-dir="Auto"'));
+await up.onclick({target:{closest:()=>({dataset:{dir:'Lego'}}),id:''},preventDefault(){}});
+t('een map openen toont de submappen en het kruimelpad', up.innerHTML.includes('data-dir="Technic"')&&up.innerHTML.includes('data-crumb="0"')&&up.innerHTML.includes('data-up="1"'));
+await up.onclick({target:{closest:()=>({dataset:{crumb:'0'}}),id:''},preventDefault(){}});
+t('klikken op de root in het kruimelpad gaat terug naar boven', up.innerHTML.includes('data-dir="Auto"')&&!up.innerHTML.includes('data-up="1"'));

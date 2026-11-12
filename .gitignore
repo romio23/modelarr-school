@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+venv/
+.venv/
+config/
+*.db
+*.db-wal
+*.db-shm
+*.log
+.env
+*.env
+.smbcred
+modelarr.zip
+.DS_Store
+Thumbs.db

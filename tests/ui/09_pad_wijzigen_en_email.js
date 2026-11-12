@@ -1,0 +1,22 @@
+const t=(n,ok)=>console.log(ok?'OK  ':'FOUT',n);
+const roots=[{id:7,path:'\\\\nas\\3d',watch:true,allow_write:false,ok:false,writable:false,count:12,live:false,free:null}];
+const settings={scan_interval:5,min_age:5,extensions:'stl,3mf',thumb_size:384,thumb_source:'embedded',thumb_delay:0,recent_days:7,big_mb:50,zip_support:true,backup_keep:7,backup_thumbs:false};
+let plan={new_path:'/models',total:12,found:11,missing:1,conflicts:3,conflicts_with_data:1,merge:true,needs_force:false};
+apiImpl=async(u,m,b)=>u==='/api/roots'?roots:u==='/api/settings'?settings:u==='/api/roots/7/move'?(b.apply?{}:plan):{};
+await V['settings/media']();
+const h=out['#view'].innerHTML, click=d=>out['#view'].onclick({target:{id:'',dataset:d}}), moves=()=>apiCalls.filter(c=>c[0]==='/api/roots/7/move');
+t('Mediabeheer: "Pad wijzigen" bij elke root; niet-bereikbare root staat rood', h.includes('data-mv="7"')&&h.includes('Pad wijzigen')&&h.includes('✗ niet bereikbaar'));
+promptAnswer='/models'; apiCalls.length=0; await click({mv:'7',p:'\\\\nas\\3d'});
+t('pad wijzigen: eerst een overzicht (zonder apply), daarna na bevestiging uitvoeren met apply en force', moves().length===2&&moves()[0][2].apply===undefined&&moves()[0][2].path==='/models'&&moves()[1][2].apply===true&&moves()[1][2].force===true);
+t('bevestiging noemt nieuwe pad, 11 van 12, de dubbelen en de dubbelen met eigen gegevens', confirmMsgs[0].includes('/models')&&confirmMsgs[0].includes('11 van 12 modellen')&&confirmMsgs[0].includes('3 van dezelfde bestanden')&&confirmMsgs[0].includes('(1 met eigen gegevens)')&&confirmMsgs[0].includes('1 niet gevonden'));
+apiCalls.length=0; confirmAnswer=false; await click({mv:'7',p:'\\\\nas\\3d'}); t('annuleren in de bevestiging: er wordt niets gewijzigd', moves().length===1&&moves()[0][2].apply===undefined);
+apiCalls.length=0; confirmAnswer=true; promptAnswer='\\\\nas\\3d'; await click({mv:'7',p:'\\\\nas\\3d'}); t('hetzelfde pad of leeg invoeren: geen verzoek', apiCalls.length===0);
+promptAnswer=null; await click({mv:'7',p:'x'}); t('prompt annuleren: geen verzoek', apiCalls.length===0);
+plan={...plan,conflicts:0,conflicts_with_data:0,merge:false,missing:6,found:6,needs_force:true}; confirmMsgs.length=0; promptAnswer='/models'; await click({mv:'7',p:'x'});
+t('minder dan de helft gevonden: duidelijke waarschuwing in de bevestiging', confirmMsgs[0].includes('minder dan de helft')&&!confirmMsgs[0].includes('dubbele ingangen'));
+// e-mailadres van een gebruiker wijzigen
+apiImpl=async u=>u==='/api/schools'?{schools:[]}:u==='/api/users'?[{id:2,username:'gast',email:'',role:'student',can_download:true,active:true,last_login:null,me:false}]:{};
+await V['settings/users'](); apiCalls.length=0; promptAnswer='kees@example.nl'; await click({em:'2',n:'gast',v:''});
+t('e-mail wijzigen: PUT met het nieuwe adres', apiCalls[0][0]==='/api/users/2'&&apiCalls[0][1]==='PUT'&&apiCalls[0][2].email==='kees@example.nl');
+apiCalls.length=0; promptAnswer=''; await click({em:'2',n:'gast',v:'kees@example.nl'}); t('leeg laten wist het adres', apiCalls[0][2].email==='');
+apiCalls.length=0; promptAnswer=null; await click({em:'2',n:'gast',v:''}); t('annuleren: geen verzoek', apiCalls.length===0);

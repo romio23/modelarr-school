@@ -1,0 +1,20 @@
+const t=(n,ok)=>console.log(ok?'OK  ':'FOUT',n);
+{ const m = new Map(); sessionStorage = {getItem: k => m.has(k) ? m.get(k) : null, setItem: (k, v) => m.set(k, String(v))}; }
+const pop = () => els['#spop'].innerHTML;
+ME={auth:true,user:'mees',role:'staff',can_download:true};
+document.querySelector('#spop'); location.hash='#/library'; els['#spop'].innerHTML='';
+staffPopup({requests_open:2, reports_open:1});
+t('pop-up bij inloggen: aantallen en knoppen', pop().includes('2 openstaande printaanvragen')&&pop().includes('1 openstaande melding')&&pop().includes('data-go="requests"')&&pop().includes('data-go="reports"'));
+els['#spop'].innerHTML='';
+staffPopup({requests_open:2, reports_open:1});
+t('zelfde aantallen: geen tweede pop-up', pop()==='');
+staffPopup({requests_open:3, reports_open:1});
+t('er komt een aanvraag bij: opnieuw een pop-up', pop().includes('3 openstaande printaanvragen'));
+els['#spop'].innerHTML=''; staffPopup({requests_open:1, reports_open:0}); staffPopup({requests_open:2, reports_open:0});
+t('minder en daarna weer meer: opnieuw melden', pop().includes('2 openstaande printaanvragen')&&!pop().includes('melding'));
+els['#spop'].innerHTML=''; location.hash='#/requests'; staffPopup({requests_open:5, reports_open:0});
+t('als je al op de pagina Printaanvragen bent: geen pop-up', pop()==='');
+location.hash='#/library'; staffPopup({requests_open:5, reports_open:2});
+t('nieuwe melding terwijl je elders bent: wel een pop-up, alleen voor de melding erbij gevraagd', pop().includes('2 openstaande meldingen'));
+els['#spop'].innerHTML=''; ME={auth:true,user:'jan',role:'student'}; staffPopup({requests_open:9, reports_open:9});
+t('leerling krijgt nooit een pop-up', pop()==='');

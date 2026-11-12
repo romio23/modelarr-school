@@ -1,0 +1,10 @@
+const t=(n,ok)=>console.log(ok?'OK  ':'FOUT',n);
+buildNav(); const nav=out['#nav'].innerHTML;
+t('navigatie: NL/EN-knoppen, de huidige taal gemarkeerd', /data-lang="nl" class="p"/.test(nav)&&/data-lang="en" class=""/.test(nav));
+localStorage.setItem('lang','nl'); await out['#nav'].onclick({target:{dataset:{lang:'en'}},id:''});
+t('op EN klikken slaat de taal op en herlaadt de pagina', localStorage.getItem('lang')==='en'&&location.reloaded===true);
+location.reloaded=false; localStorage.setItem('lang','nl');
+showLogin(); t('inlogpagina: taalknoppen aanwezig', out['#view'].innerHTML.includes('data-lang="nl"')&&out['#view'].innerHTML.includes('data-lang="en"'));
+out['#view'].onclick({target:{dataset:{lang:'en'}}}); t('inlogpagina: taal wisselen werkt', localStorage.getItem('lang')==='en'&&location.reloaded===true);
+localStorage.setItem('lang','nl');
+t('datums en getallen volgen de taal (nl-NL in het Nederlands)', I18N.LOC==='nl-NL'&&fdate(1760000000).includes('2025')&&String(I18N.LOC).startsWith('nl'));

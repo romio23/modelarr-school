@@ -1,0 +1,12 @@
+const t=(n,ok)=>console.log(ok?'OK  ':'FOUT',n);
+const m={id:1,name:'a',ext:'3mf',folder:'',size:1,added:1,status:'ok',cats:[],info:{filament_g:12.3,plates:[{id:1,name:''},{id:2,name:'Deksels'}]},prints_failed:1,prints_ok:1};
+L.d={categories:[],models:[m],spoolman:true}; L.printers=[{id:5,name:'P1S',bed_x:1,bed_y:1,bed_z:1}];
+t('logboek laadt: toont "Laden…" tot de regels er zijn', logLines(m)==='Laden…');
+L.logs[1]=[{id:9,result:'ok',ts:5,printer:'P1S',plate:2,grams:12.5,spool:'Bambu <PLA>',notes:'<b>x</b>'},{id:8,result:'failed',ts:4,printer:null,plate:null,grams:null,spool:null,notes:null}];
+const lines=logLines(m); t('regels: ✓/✗, printer, plaat, gram, spoel; HTML wordt ge-escaped', lines.includes('✓')&&lines.includes('✗')&&lines.includes('P1S')&&lines.includes('plaat 2')&&lines.includes('12.5 g')&&lines.includes('Bambu &lt;PLA&gt;')&&lines.includes('&lt;b&gt;x&lt;/b&gt;')&&!lines.includes('<b>x</b>'));
+t('teller 1 gelukt, 1 mislukt', logCount(m)==='1 gelukt, 1 mislukt');
+const h=logHTML(m); t('formulier: printers, platen (met naam), gewicht uit 3MF voorgevuld', h.includes('value="5"')&&h.includes('Deksels')&&h.includes('value="12.3"'));
+t('formulier: Spoolman-keuze alleen als Spoolman is ingesteld', h.includes('id="ls"') && !(L.d.spoolman=false, logHTML(m)).includes('id="ls"'));
+L.d.spoolman=true; t('verwijderknop per regel met uitleg over Spoolman', lines.includes('data-delprint="9"')&&lines.includes('Spoolman'));
+const many=Array.from({length:8},(_,i)=>({id:i,result:'ok',ts:i})); L.logs[1]=many; t('meer dan 5 regels: "… en 3 eerdere"', logLines(m).includes('en 3 eerdere'));
+L.logs[1]=[]; t('leeg logboek', logLines(m).includes('Nog niets gelogd'));

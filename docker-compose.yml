@@ -1,0 +1,24 @@
+services:
+  modelarr:
+    build: .
+    container_name: modelarr
+    # Draai als de eigenaar van je modelmap (zie `id` op de host), zodat lezen en hernoemen werkt:
+    user: "1000:1000"
+    ports:
+      - "8765:8765"              # niet 5000: dat gebruikt Synology DSM
+    environment:
+      - TZ=Europe/Amsterdam
+      - MODELS_DIR=/models       # standaard root folder(s), komma-gescheiden; meer toevoegen kan in de UI
+      # - ALLOW_ORGANIZE=1      # hernoemen/verplaatsen toestaan (standaard alleen indexeren; ook in de UI per root folder in te stellen)
+      # - BACKUP_DIR=/backups   # waar de dagelijkse back-ups komen (zet ook het volume hieronder aan). Ook in de app in te stellen.
+      # - AUTH_USER=admin        # optioneel: maakt bij de eerste start een beheerdersaccount aan (gasten voeg je daarna toe in de app)
+      # - AUTH_PASS=kies-een-wachtwoord
+      # - MAX_FILE_MB=400        # grotere bestanden krijgen geen thumbnail
+      # - THUMB_WORKERS=3        # thumbnails parallel maken (standaard 1). DS423: 3 is veilig; bij weinig RAM niet hoger
+      # - FOLLOW_SYMLINKS=1      # mappen die symbolische links zijn ook doorzoeken (standaard niet)
+      # - THUMB_MAX_TRIS=250000  # meer driehoeken dan dit worden voor de thumbnail uitgedund (standaard 250000): veel sneller bij grote modellen
+    volumes:
+      - ./config:/config                   # database, thumbnails, instellingen
+      - /pad/naar/3d-modellen:/models      # voeg :ro toe als de app niets mag hernoemen
+      # - /pad/naar/back-ups:/backups     # back-upmap, bij voorkeur buiten de config-map (andere schijf of share)
+    restart: unless-stopped

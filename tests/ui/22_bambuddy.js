@@ -1,0 +1,26 @@
+const t=(n,ok)=>console.log(ok?'OK  ':'FOUT',n);
+const base={slicer:'bambustudio',spoolman_url:'',api_key:'abc',host:'0.0.0.0',port:8765,version:'1.1.2',bambuddy_url:'http://bb:8000',bambuddy_key_set:true};
+let settings={...base};
+apiImpl=async(u,m,b)=>u==='/api/settings'?settings:u==='/api/bambuddy/status'?{configured:true,ok:true,printers:[{id:1,name:'P1S'}],sync:{last:1760000000,error:null,result:{added:2,known:5,unmatched:1,other:0,examples:['Onbekend']}}}:{};
+await V['settings/general']();
+let h=out['#view'].innerHTML, click=d=>out['#view'].onclick({target:{id:d.id||'',dataset:{}}});
+t('instellingen: Bambuddy-adres en sleutelveld; sleutel zelf staat nooit in de pagina', h.includes('id="bbu"')&&h.includes('value="http://bb:8000"')&&h.includes('id="bbk"')&&h.includes('type="password"')&&h.includes('opgeslagen, leeg laten om te behouden'));
+const q=s=>document.querySelector(s);
+await new Promise(r=>setTimeout(r,30));
+t('laatste synchronisatie wordt getoond', (q('#bbinfo').textContent||'').includes('2 nieuw')&&q('#bbinfo').textContent.includes('1 zonder bijpassend model (Onbekend)'));
+q('#bbu').value=' http://nieuw:8000 '; q('#bbk').value='';
+apiCalls.length=0; await click({id:'bbsave'});
+let sv=apiCalls.find(c=>c[0]==='/api/settings'&&c[1]==='POST');
+t('opslaan met leeg sleutelveld stuurt de sleutel niet mee (de opgeslagen blijft)', sv&&sv[2].bambuddy_url===' http://nieuw:8000 '&&!('bambuddy_key' in sv[2]));
+await V['settings/general'](); q('#bbk').value=' nieuwe-sleutel '; apiCalls.length=0; await click({id:'bbsave'});
+sv=apiCalls.find(c=>c[0]==='/api/settings'&&c[1]==='POST');
+t('opslaan met ingevulde sleutel stuurt hem (zonder spaties) mee', sv&&sv[2].bambuddy_key==='nieuwe-sleutel');
+apiCalls.length=0; await click({id:'bbsync'});
+t('"Nu synchroniseren" roept de sync aan', apiCalls.some(c=>c[0]==='/api/bambuddy/sync'&&c[1]==='POST'));
+// kleuren die nu in de gekozen printer zitten
+out['#bbcol']=out['#bbcol']||{innerHTML:'',textContent:''};
+apiImpl=async u=>u.startsWith('/api/bambuddy/colors')?{ok:true,printers:[{id:7,slots:[{hex:'#F98C36',name:'Oranje',material:'PLA',slot:'AMS 1 slot 3'},{hex:'#FFFFFF',name:'Wit',material:'PLA',slot:'AMS 1 slot 2'}]}],colors:[]}:{};
+await showBbColors('7');
+t('printerkeuze toont de kleuren die echt geladen zijn', out['#bbcol'].innerHTML.includes('Oranje PLA')&&out['#bbcol'].innerHTML.includes('#F98C36')&&out['#bbcol'].innerHTML.includes('AMS 1 slot 3'));
+await showBbColors('');
+t('geen printer gekozen: lijst leeg', out['#bbcol'].innerHTML==='');

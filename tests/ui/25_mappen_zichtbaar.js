@@ -1,0 +1,10 @@
+const t=(n,ok)=>console.log(ok?'OK  ':'FOUT',n);
+ME={auth:true,user:'mees',role:'staff',can_download:true,school:{id:1,name:'School A'}};
+let calls=[];
+apiImpl=async(u,m,b)=>{calls.push([u,m,b]); return u==='/api/folder-access'?{roots:[{id:1,name:'modellen'}]}:u.startsWith('/api/folder-access?')?{dirs:[{name:'Auto',hidden:false,inherited:false},{name:'Oud',hidden:true,inherited:false}],path:'',inherited:false}:{ok:true};};
+await V.access(); let h=els['#view'].innerHTML;
+t('mappenpagina: mappen met vinkje; verborgen map heeft geen vinkje', h.includes('data-vis="Auto" checked')&&/data-vis="Oud"\s*>/.test(h)&&h.includes('Zichtbaar voor leerlingen'));
+calls=[]; await els['#view'].onchange({target:{dataset:{vis:'Auto'},checked:false}});
+t('vinkje weghalen: map verbergen via de API', calls.some(c=>c[0]==='/api/folder-access/hide'&&c[2].hidden===true&&c[2].path==='Auto'&&c[2].root===1));
+buildNav(); const nv=els['#nav'].innerHTML; t('navigatie medewerker bevat Mappen', nv.includes('#/access'));
+ME={...ME,role:'student'}; buildNav(); t('navigatie leerling bevat geen Mappen', !els['#nav'].innerHTML.includes('#/access'));

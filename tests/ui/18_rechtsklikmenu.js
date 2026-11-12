@@ -1,0 +1,67 @@
+// Rechtsklikmenu in de bibliotheek + selectie wissen na een actie.
+const t=(n,ok)=>console.log(ok?'OK  ':'FOUT',n);
+const M=n=>({id:n,name:'m'+n,ext:'stl',cats:[],status:'ok',thumb_at:1,added:n,size:100,path:'/m/m'+n+'.stl',dims:[1,1,1],info:null,can_rename:true,favorite:false,printed:'',notes:'',dup:'',source_url:'',display:'',folder:'',pdims:null,prints_ok:0,prints_failed:0,last_print:null,error:null,container:'',member:''});
+let calls=[]; const cats=[{id:1,name:'Rack',count:0},{id:2,name:'Gereedschap',count:0}];
+const mkApi=(extra={})=>async(u,m,b)=>{ calls.push([u,m,b]); if(u.startsWith('/api/library')) return SRV([1,2,3,4,5].map(M),u,{categories:cats}); if(u==='/api/printers') return []; if(u==='/api/models/trash') return {done:b.ids.length,failed:[],...extra}; return {}; };
+ME={auth:false,user:null,role:'admin',can_download:true}; apiImpl=mkApi();
+L.sel.clear(); L.q=''; L.cat='all'; L.ext='all'; L.flt='all'; L.sort='name'; L.size=100; L.page=0;
+await V.library();
+const view=$('#view'), menu=$('#ctx');
+const rc=(id,x=100,y=100)=>{ let prevented=false; view.oncontextmenu({clientX:x,clientY:y,preventDefault(){prevented=true},target:{closest:()=>({dataset:{id:String(id)}})}}); return prevented; };
+const item=async a=>menu.onclick({target:{dataset:{cm:a}}});
+t('rechtsklik op een model: eigen menu (standaardmenu van de browser onderdrukt) en het model wordt geselecteerd', rc(2)===true&&menu.style.display==='block'&&L.sel.size===1&&L.sel.has(2));
+const h=menu.innerHTML;
+t('menu bevat categorie-submenu\'s met alle categorieën, favoriet, niet favoriet en prullenbak', ['In categorie zetten','Uit categorie halen','data-cm="cadd:1"','data-cm="crem:2"','data-cm="fav1"','data-cm="fav0"','data-cm="trash"','1 geselecteerd'].every(x=>h.includes(x)));
+await item('cadd:2');
+const as=calls.find(c=>c[0]==='/api/assign');
+t('"In categorie zetten" stuurt de selectie en de gekozen categorie', as&&JSON.stringify(as[2])===JSON.stringify({model_ids:[2],category_id:2,action:'add'}));
+t('na de actie is de selectie gewist en het menu dicht', L.sel.size===0&&menu.style.display==='none'&&menu.innerHTML==='');
+L.sel=new Set([1,3,4]); calls.length=0; rc(3);
+t('rechtsklik op een model dat al geselecteerd is: de hele selectie blijft (3 modellen)', L.sel.size===3&&menu.innerHTML.includes('3 geselecteerd'));
+await item('fav1'); const bk=calls.find(c=>c[0]==='/api/models/bulk');
+t('favoriet: alle 3 geselecteerde modellen, daarna selectie gewist', bk&&JSON.stringify(bk[2])===JSON.stringify({model_ids:[1,3,4],favorite:true})&&L.sel.size===0);
+L.sel=new Set([1,2]); rc(5); 
+t('rechtsklik op een model buiten de selectie: alleen dat model', L.sel.size===1&&L.sel.has(5));
+calls.length=0; await item('fav0'); t('niet favoriet', calls.find(c=>c[0]==='/api/models/bulk')[2].favorite===false&&L.sel.size===0);
+rc(4); await item('crem:1'); t('"Uit categorie halen" stuurt action remove', calls.find(c=>c[0]==='/api/assign'&&c[2].action==='remove'&&c[2].category_id===1)&&L.sel.size===0);
+rc(2); confirmMsgs.length=0; calls.length=0; await item('trash');
+t('prullenbak vanuit het menu: eerst bevestiging, dan any:true, selectie gewist', confirmMsgs.length===1&&confirmMsgs[0].startsWith('1 bestanden')&&calls.find(c=>c[0]==='/api/models/trash'&&c[2].any===true&&c[2].ids[0]===2)&&L.sel.size===0);
+apiImpl=mkApi({done:0,failed:[{id:3,error:'Model niet gevonden'}]}); rc(3); await item('trash');
+t('prullenbak mislukt: dat model blijft geselecteerd', L.sel.size===1&&L.sel.has(3));
+L.sel.clear(); rc(1); confirmAnswer=false; calls.length=0; await item('trash');
+t('bevestiging geweigerd: niets verstuurd, selectie blijft', !calls.find(c=>c[0]==='/api/models/trash')&&L.sel.has(1)); confirmAnswer=true;
+await item('');  t('klik op een kopje of lege plek doet niets', true);
+// balkacties wissen de selectie ook
+L.sel=new Set([1,2]); draw(); calls.length=0;
+await view.onclick({target:{id:'bf1',classList:{contains:()=>false},dataset:{}}});
+t('knop Favoriet in de balk wist de selectie ook', L.sel.size===0);
+// geen menu voor gasten, en niet buiten een model
+ME={auth:true,user:'gast',role:'viewer',can_download:true}; let pv=false; menu.style.display='none'; view.oncontextmenu({clientX:1,clientY:1,preventDefault(){pv=true},target:{closest:()=>({dataset:{id:'1'}})}});
+t('gast: geen eigen menu (gewoon het browsermenu)', pv===false&&menu.style.display==='none');
+ME={auth:false,user:null,role:'admin',can_download:true}; pv=false; view.oncontextmenu({clientX:1,clientY:1,preventDefault(){pv=true},target:{closest:()=>null}});
+t('rechtsklik naast de modellen: geen eigen menu', pv===false&&menu.style.display==='none');
+apiImpl=async u=>u.startsWith('/api/library')?SRV([1].map(M),u,{categories:[]}):u==='/api/printers'?[]:{}; await V.library(); rc(1);
+t('zonder categorieën: submenu\'s uitgeschakeld met uitleg', menu.innerHTML.includes('Nog geen categorieën')&&!menu.innerHTML.includes('data-cm="cadd'));
+// aanraakscherm: lang indrukken
+apiImpl=mkApi(); menu.style.display='none'; menu.innerHTML=''; L.sel.clear(); await V.library();
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const tgt={closest:()=>({dataset:{id:'3'}})}; const tch=(x,y)=>({target:tgt,touches:[{clientX:x,clientY:y}],cancelable:true,preventDefault(){this.prevented=true}});
+let ts=tch(50,60); view.ontouchstart(ts); await wait(250);
+t('kort aanraken (minder dan een halve seconde): nog geen menu', menu.style.display!=='block');
+view.ontouchend(tch(50,60)); await wait(400);
+t('loslaten voor de tijd om is: nooit een menu', menu.style.display!=='block'&&L.sel.size===0);
+view.ontouchstart(tch(50,60)); await wait(650);
+t('lang indrukken (0,5 s): menu bij de vinger, model geselecteerd', menu.style.display==='block'&&L.sel.has(3)&&menu.style.left==='50px'&&menu.style.top==='60px');
+let te=tch(50,60); view.ontouchend(te);
+t('loslaten na lang indrukken onderdrukt de klik (het model opent niet)', te.prevented===true);
+await view.onclick({target:{id:'',classList:{contains:()=>false},dataset:{},closest:()=>({dataset:{id:'3'}})}});
+t('en een klik direct daarna doet niets (geen venster met het model)', openId===null);
+hideCtx(); L.sel.clear(); view.ontouchstart(tch(10,10)); view.ontouchmove({touches:[{clientX:10,clientY:60}]}); await wait(650);
+t('verschuiven tijdens het aanraken (scrollen) is geen lang indrukken', menu.style.display!=='block');
+view.ontouchstart({target:tgt,touches:[{clientX:1,clientY:1},{clientX:5,clientY:5}]}); await wait(650);
+t('twee vingers (zoomen): geen menu', menu.style.display!=='block');
+ME={auth:true,user:'gast',role:'viewer',can_download:true}; view.ontouchstart(tch(5,5)); await wait(650);
+t('gast: lang indrukken doet niets', menu.style.display!=='block'); ME={auth:false,user:null,role:'admin',can_download:true};
+// een tik op het kopje van een submenu klapt het open (geen hover op een aanraakscherm)
+const cls=new Set(); const hs={classList:{toggle:c=>cls.has(c)?cls.delete(c):cls.add(c)}};
+await menu.onclick({target:{dataset:{},closest:s=>s==='.has'?hs:null}}); t('tik op "In categorie zetten" klapt het submenu open', cls.has('open'));

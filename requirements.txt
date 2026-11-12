@@ -1,0 +1,6 @@
+flask>=3.0
+waitress>=3.0
+watchdog>=4.0
+numpy>=1.26
+pillow>=10.0
+trimesh>=4.0
