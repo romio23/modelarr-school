@@ -4,6 +4,22 @@ Een aparte versie van [Modelarr](README.md) voor scholen: leerlingen en medewerk
 
 > Deze app is gemaakt met behulp van [Claude](https://claude.ai/) (Anthropic). Dit is een eerste versie.
 
+## Screenshots
+
+Voorbeeldgegevens met verzonnen scholen en leerlingen.
+
+**Bibliotheek (medewerker)**
+
+![Bibliotheek](docs/screenshots/school-bibliotheek.png)
+
+**Printaanvragen van leerlingen**
+
+![Printaanvragen](docs/screenshots/school-printaanvragen.png)
+
+**Leerlingen beheren**
+
+![Leerlingen](docs/screenshots/school-leerlingen.png)
+
 ## Rollen
 
 | Rol | Wat kan het |
