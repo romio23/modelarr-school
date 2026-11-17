@@ -205,7 +205,6 @@ window.I18N_EN = {
 "Categorie(ën) (optioneel)": "Category(ies) (optional)",
 "Bestanden": "Files",
 "Er is geen beschrijfbare root folder om naartoe te uploaden.": "There is no writable root folder to upload to.",
-"Modellen uploaden naar een map en categorie kiezen": "Upload models to a folder and choose a category",
 "Of een nieuwe map in deze map (optioneel)": "Or a new folder in this folder (optional)",
 "Plak hier de sleutel uit Bambuddy": "Paste the key from Bambuddy here",
 "•••••••• (opgeslagen, leeg laten om te behouden)": "•••••••• (saved, leave empty to keep)",
@@ -442,7 +441,6 @@ window.I18N_EN = {
 "Negeren": "Ignore",
 "Pagina": "Page",
 "Per pagina": "Per page",
-"Alles": "All",
 "Eerste pagina": "First page",
 "Vorige pagina": "Previous page",
 "Volgende pagina": "Next page",
@@ -727,7 +725,10 @@ window.I18N_EN = {
 "Mappen met 3D-modellen. Elke root wordt gescand en live in de gaten gehouden; nieuwe bestanden komen automatisch in de bibliotheek met een thumbnail. Standaard wordt er alleen geïndexeerd: hernoemen en verplaatsen (ook naar de prullenbak) zet je per root folder aan.": "Folders with 3D models. Every root is scanned and watched live; new files are added to the library automatically with a thumbnail. By default files are only indexed: turn on renaming and moving (also to the trash) per root folder.",
 "Er zijn nog geen accounts: iedereen met toegang tot dit adres kan alles. Maak hieronder je eigen beheerdersaccount aan; daarna moet iedereen inloggen.": "There are no accounts yet: anyone with access to this address can do everything. Create your own administrator account below; after that everyone has to log in.",
 "Verwijdert alle accounts; daarna heeft iedereen met toegang tot dit adres weer alle rechten.": "Deletes all accounts; afterwards anyone with access to this address has all rights again.",
-"Zet de app niet rechtstreeks op internet: gebruik daarvoor HTTPS, bijvoorbeeld via de reverse proxy van je NAS. Wachtwoorden worden versleuteld opgeslagen; na 5 foute pogingen is inloggen 10 minuten geblokkeerd.": "Do not expose the app directly to the internet: use HTTPS for that, for example via your NAS reverse proxy. Passwords are stored encrypted; after 5 failed attempts logging in is blocked for 10 minutes."
+"Zet de app niet rechtstreeks op internet: gebruik daarvoor HTTPS, bijvoorbeeld via de reverse proxy van je NAS. Wachtwoorden worden versleuteld opgeslagen; na 5 foute pogingen is inloggen 10 minuten geblokkeerd.": "Do not expose the app directly to the internet: use HTTPS for that, for example via your NAS reverse proxy. Passwords are stored encrypted; after 5 failed attempts logging in is blocked for 10 minutes.",
+"Licht": "Light",
+"Donker": "Dark",
+"Automatisch": "Automatic"
 },
 "phrases": [
 [
@@ -1352,26 +1353,106 @@ window.I18N_EN = {
 ]
 ],
 "patterns": [
-["^Bij Uploads delen kies je of nieuwe uploads van leerlingen standaard gedeeld worden; \"Algemeen\" volgt de instelling onder Algemeen \\(nu: aan\\)\\.$", "", "Under Share uploads you choose whether new student uploads are shared by default; \"General\" follows the setting under General (now: on)."],
-["^Bij Uploads delen kies je of nieuwe uploads van leerlingen standaard gedeeld worden; \"Algemeen\" volgt de instelling onder Algemeen \\(nu: uit\\)\\.$", "", "Under Share uploads you choose whether new student uploads are shared by default; \"General\" follows the setting under General (now: off)."],
-["Root folder (.+?) is niet bereikbaar\\. De bibliotheek blijft staan; Modelarr kijkt elke minuut opnieuw\\.", "", "Root folder $1 is not reachable. The library stays as it is; Modelarr checks again every minute."],
-["Root folder (.+?) lijkt leeg terwijl er ([\\d.,]+) modellen bekend zijn\\. Is de share gekoppeld\\? Er is niets verwijderd; Modelarr kijkt elke minuut opnieuw\\.", "", "Root folder $1 looks empty while $2 models are known. Is the share mounted? Nothing was deleted; Modelarr checks again every minute."],
-["([\\d.,]+) map\\(pen\\) in (.+?) konden niet gelezen worden\\. De modellen daarin blijven staan\\.", "", "$1 folder(s) in $2 could not be read. The models in them are kept."],
-["^(.+?) is niet bereikbaar; de bibliotheek blijft staan tot de map terug is$", "", "$1 is not reachable; the library is kept until the folder is back"],
-["^(.+?) lijkt leeg terwijl er (\\d+) modellen bekend zijn \\(share niet gekoppeld\\?\\); niets verwijderd$", "", "$1 looks empty while $2 models are known (share not mounted?); nothing deleted"],
-["^(\\d+) map\\(pen\\) in (.+?) niet te lezen; modellen daarin blijven staan$", "", "$1 folder(s) in $2 could not be read; the models in them are kept"],
-["^(.+?) is weer bereikbaar$", "", "$1 is reachable again"],
-["^Verwijderen: (.+)\\?$", "", "Delete $1?"],
-["^Verwijder geselecteerde \\((\\d+)\\)$", "", "Delete selected ($1)"],
-["^(🗑 )?Verwijder geselecteerde \\((\\d+)\\)$", "", "$1Delete selected ($2)"],
-["^(\\d+) (leerling|leerlingen) met (\\d+) (bestand|bestanden) wordt definitief verwijderd\\. Het account kan niet worden teruggezet\\.$", "", "$1 pupil(s) with $3 file(s) will be permanently deleted. The account cannot be restored."],
-["^(\\d+) (leerling|leerlingen) met (\\d+) (bestand|bestanden) worden definitief verwijderd\\. Het account kan niet worden teruggezet\\.$", "", "$1 pupil(s) with $3 file(s) will be permanently deleted. The account cannot be restored."],
-["^Ook alle bestanden van (deze leerling|deze leerlingen) verwijderen$", "", "Also delete all files of $1"],
-["^(\\d+) (leerling logt|leerlingen loggen) in met Microsoft\\. Haal ze ook uit de groep in Microsoft Entra, anders wordt het account bij de volgende inlog opnieuw aangemaakt\\.$", "", "$1 pupil(s) sign in with Microsoft. Also remove them from the group in Microsoft Entra, otherwise the account is created again at the next sign-in."],
-["^(\\d+) (leerling|leerlingen) verwijderd$", "", "$1 pupil(s) deleted"],
-["^(\\d+) verwijderd, (\\d+) niet \\(map kon niet worden verplaatst\\)$", "", "$1 deleted, $2 not (folder could not be moved)"],
-["^(\\d+) leerling\\(en\\) verwijderd, bestanden naar de prullenbak$", "", "$1 pupil(s) deleted, files moved to the trash"],
-["^(\\d+) leerling\\(en\\) verwijderd, bestanden bewaard$", "", "$1 pupil(s) deleted, files kept"],
+[
+"^Bij Uploads delen kies je of nieuwe uploads van leerlingen standaard gedeeld worden; \"Algemeen\" volgt de instelling onder Algemeen \\(nu: aan\\)\\.$",
+"",
+"Under Share uploads you choose whether new student uploads are shared by default; \"General\" follows the setting under General (now: on)."
+],
+[
+"^Bij Uploads delen kies je of nieuwe uploads van leerlingen standaard gedeeld worden; \"Algemeen\" volgt de instelling onder Algemeen \\(nu: uit\\)\\.$",
+"",
+"Under Share uploads you choose whether new student uploads are shared by default; \"General\" follows the setting under General (now: off)."
+],
+[
+"Root folder (.+?) is niet bereikbaar\\. De bibliotheek blijft staan; Modelarr kijkt elke minuut opnieuw\\.",
+"",
+"Root folder $1 is not reachable. The library stays as it is; Modelarr checks again every minute."
+],
+[
+"Root folder (.+?) lijkt leeg terwijl er ([\\d.,]+) modellen bekend zijn\\. Is de share gekoppeld\\? Er is niets verwijderd; Modelarr kijkt elke minuut opnieuw\\.",
+"",
+"Root folder $1 looks empty while $2 models are known. Is the share mounted? Nothing was deleted; Modelarr checks again every minute."
+],
+[
+"([\\d.,]+) map\\(pen\\) in (.+?) konden niet gelezen worden\\. De modellen daarin blijven staan\\.",
+"",
+"$1 folder(s) in $2 could not be read. The models in them are kept."
+],
+[
+"^(.+?) is niet bereikbaar; de bibliotheek blijft staan tot de map terug is$",
+"",
+"$1 is not reachable; the library is kept until the folder is back"
+],
+[
+"^(.+?) lijkt leeg terwijl er (\\d+) modellen bekend zijn \\(share niet gekoppeld\\?\\); niets verwijderd$",
+"",
+"$1 looks empty while $2 models are known (share not mounted?); nothing deleted"
+],
+[
+"^(\\d+) map\\(pen\\) in (.+?) niet te lezen; modellen daarin blijven staan$",
+"",
+"$1 folder(s) in $2 could not be read; the models in them are kept"
+],
+[
+"^(.+?) is weer bereikbaar$",
+"",
+"$1 is reachable again"
+],
+[
+"^Verwijderen: (.+)\\?$",
+"",
+"Delete $1?"
+],
+[
+"^Verwijder geselecteerde \\((\\d+)\\)$",
+"",
+"Delete selected ($1)"
+],
+[
+"^(🗑 )?Verwijder geselecteerde \\((\\d+)\\)$",
+"",
+"$1Delete selected ($2)"
+],
+[
+"^(\\d+) (leerling|leerlingen) met (\\d+) (bestand|bestanden) wordt definitief verwijderd\\. Het account kan niet worden teruggezet\\.$",
+"",
+"$1 pupil(s) with $3 file(s) will be permanently deleted. The account cannot be restored."
+],
+[
+"^(\\d+) (leerling|leerlingen) met (\\d+) (bestand|bestanden) worden definitief verwijderd\\. Het account kan niet worden teruggezet\\.$",
+"",
+"$1 pupil(s) with $3 file(s) will be permanently deleted. The account cannot be restored."
+],
+[
+"^Ook alle bestanden van (deze leerling|deze leerlingen) verwijderen$",
+"",
+"Also delete all files of $1"
+],
+[
+"^(\\d+) (leerling logt|leerlingen loggen) in met Microsoft\\. Haal ze ook uit de groep in Microsoft Entra, anders wordt het account bij de volgende inlog opnieuw aangemaakt\\.$",
+"",
+"$1 pupil(s) sign in with Microsoft. Also remove them from the group in Microsoft Entra, otherwise the account is created again at the next sign-in."
+],
+[
+"^(\\d+) (leerling|leerlingen) verwijderd$",
+"",
+"$1 pupil(s) deleted"
+],
+[
+"^(\\d+) verwijderd, (\\d+) niet \\(map kon niet worden verplaatst\\)$",
+"",
+"$1 deleted, $2 not (folder could not be moved)"
+],
+[
+"^(\\d+) leerling\\(en\\) verwijderd, bestanden naar de prullenbak$",
+"",
+"$1 pupil(s) deleted, files moved to the trash"
+],
+[
+"^(\\d+) leerling\\(en\\) verwijderd, bestanden bewaard$",
+"",
+"$1 pupil(s) deleted, files kept"
+],
 [
 "^(\\d+) openstaande printaanvraag$",
 "",
@@ -1513,12 +1594,12 @@ window.I18N_EN = {
 "Ignored · $1 group(s)"
 ],
 [
-"^Modellen toevoegen… ([\\d.,\u00a0]+) van ([\\d.,\u00a0]+)$",
+"^Modellen toevoegen… ([\\d., ]+) van ([\\d., ]+)$",
 "",
 "Adding models… $1 of $2"
 ],
 [
-"^Bibliotheek scannen… ([\\d.,\u00a0]+) bestanden gevonden in ([\\d.,\u00a0]+) mappen$",
+"^Bibliotheek scannen… ([\\d., ]+) bestanden gevonden in ([\\d., ]+) mappen$",
 "",
 "Scanning library… $1 files found in $2 folders"
 ],

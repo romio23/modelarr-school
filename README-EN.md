@@ -538,6 +538,10 @@ Do you want the thumbnails back too? Then unpack the matching zip file in the `t
 
 Also put the backup folder in a backup outside the house (for example Hyper Backup on a Synology): a backup in the same location as the original does not help with fire or theft.
 
+## Appearance (light / dark)
+Below the language buttons are three buttons: ☀ light, ☾ dark and **A** automatic (follows your device's light/dark setting). The choice is remembered per browser; without a choice the app stays dark, as before. The login page has the buttons too. Thumbnails stay dark; they are images made by the server.
+- The colours are variables at the top of `static/style.css` (`:root` for dark, `:root[data-theme=light]` for light). To change a colour, change it there.
+
 ## Language (Dutch / English)
 At the bottom left of the navigation (and on the login page) are the NL and EN buttons. The choice is remembered per browser; without a choice the app follows the language of the browser.
 - Dutch is the source language. The English text is in `static/i18n-en.js` (Dutch text, English text) and is applied in the browser on the page, also to messages from the server. Names of models, categories and notes are never translated.

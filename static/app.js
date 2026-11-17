@@ -40,14 +40,17 @@ const NAV = [['library', 'Bibliotheek'], ['requests', 'Printaanvragen'], ['repor
   ['settings', 'Instellingen', [['media', 'Mediabeheer'], ['printers', 'Printers'], ['schools', 'Scholen'], ['users', 'Gebruikers'], ['microsoft', 'Microsoft'], ['categories', 'Categorieën'], ['auto', 'Automatisch indelen'], ['general', 'Algemeen']]],
   ['system', 'Systeem', [['status', 'Status'], ['tasks', 'Taken'], ['logs', 'Logs']]]];
 const langBlock = () => `<div class="lang">${['nl', 'en'].map(l => `<button data-lang="${l}" class="${I18N.lang === l ? 'p' : ''}" title="${l === 'nl' ? 'Nederlands' : 'English'}">${l.toUpperCase()}</button>`).join('')}</div>`;
+const THEMES = [['light', '☀', 'Licht'], ['dark', '☾', 'Donker'], ['auto', 'A', 'Automatisch']];
+const themeBlock = () => `<div class="theme">${THEMES.map(([k, ic, t]) => `<button data-theme="${k}" class="${THEME.get() === k ? 'p' : ''}" title="${t}">${ic}</button>`).join('')}</div>`;
+const themeClick = e => { const k = e.target.dataset && e.target.dataset.theme; if (!k) return false; THEME.set(k); document.querySelectorAll('.theme button').forEach(b => b.classList.toggle('p', b.dataset.theme === k)); return true; };
 function buildNav() {
   const nav = adm() ? NAV : NAV.filter(n => n[0] === 'library' || n[0] === 'requests' || (staff() && ['reports', 'pupils', 'access'].includes(n[0])));  // leerlingen: bibliotheek en eigen aanvragen; medewerkers ook meldingen en leerlingen
   $('#nav').innerHTML = '<div class="logo"><img src="/static/logo.svg" alt="" width="28" height="28"><span class="wm">Model<span>arr</span> School</span></div>' + nav.map(([id, t, ch]) => ch
     ? `<div class="grp">${t}${id === 'activity' ? '<span class="badge" id="qb"></span>' : ''}</div>` + ch.map(([c, n]) => `<a class="sub" href="#/${id}/${c}" data-r="${id}/${c}">${n}</a>`).join('')
     : `<a href="#/${id}" data-r="${id}">${t}${id === 'wanted' ? '<span class="badge" id="wb"></span>' : ''}${id === 'duplicates' ? '<span class="badge" id="db"></span>' : ''}${id === 'requests' ? '<span class="badge" id="rqb"></span>' : ''}${id === 'reports' ? '<span class="badge" id="rpb"></span>' : ''}</a>`).join('')
-    + (ME.user ? `<div class="usr">👤 <b>${esc(ME.display || ME.user)}</b> <span class="dim">${ROLE_NL[ME.role] || ''}${ME.school ? ' · ' + esc(ME.school.name) : ''}</span><br><button id="logout">Uitloggen</button></div>` : '') + langBlock() + (ME.version ? `<div class="dim" style="font-size:11px;padding:6px 10px">${esc(ME.version)}</div>` : '');
+    + (ME.user ? `<div class="usr">👤 <b>${esc(ME.display || ME.user)}</b> <span class="dim">${ROLE_NL[ME.role] || ''}${ME.school ? ' · ' + esc(ME.school.name) : ''}</span><br><button id="logout">Uitloggen</button></div>` : '') + langBlock() + themeBlock() + (ME.version ? `<div class="dim" style="font-size:11px;padding:6px 10px">${esc(ME.version)}</div>` : '');
 }
-$('#nav').onclick = run(async e => { if (e.target.dataset.lang) I18N.setLang(e.target.dataset.lang); if (e.target.id === 'logout') { await api('/api/logout', 'POST'); location.reload(); } });
+$('#nav').onclick = run(async e => { if (themeClick(e)) return; if (e.target.dataset.lang) I18N.setLang(e.target.dataset.lang); if (e.target.id === 'logout') { await api('/api/logout', 'POST'); location.reload(); } });
 const V = {};
 function hideCtx() { const m = $('#ctx'); m.style.display = 'none'; m.innerHTML = ''; }
 document.addEventListener('click', e => { if (!(e.target.closest && e.target.closest('#ctx'))) hideCtx(); });
@@ -501,7 +504,7 @@ async function startViewer(box, m, plate = 0) {
     const d = new THREE.DirectionalLight(0xffffff, 2.2); d.position.set(2, 3, 2); sc.add(d, mesh);
     box.textContent = '';
     const r = v.r = new THREE.WebGLRenderer({antialias: true});
-    r.setPixelRatio(devicePixelRatio); r.setSize(box.clientWidth, box.clientHeight); r.setClearColor(0x2a2f3a); box.appendChild(r.domElement);
+    r.setPixelRatio(devicePixelRatio); r.setSize(box.clientWidth, box.clientHeight); r.setClearColor(THEME.eff() === 'light' ? 0xe3e6ee : 0x2a2f3a); box.appendChild(r.domElement);
     const cam = new THREE.PerspectiveCamera(35, box.clientWidth / box.clientHeight, .05, 50);
     cam.position.set(1.4, 1, 1.6).multiplyScalar(1.4); cam.lookAt(0, 0, 0);
     const oc = new OrbitControls(cam, r.domElement); oc.enableDamping = true;
@@ -877,21 +880,21 @@ function openUpload(cats) {
   document.body.appendChild(el);
   const S = {roots: [], root: 0, path: [], q: '', dirs: [], files: [], busy: false, exts: [], max: 0, scoped: false, quota: 0, used: 0, share: true};
   const close = () => { if (!S.busy || confirm('De upload loopt nog. Toch sluiten?')) el.remove(); };
-  const crumbs = () => [S.roots.find(r => r.id === S.root).name, ...S.path].map((x, i, all) => i === all.length - 1 ? `<b>📁 ${esc(x)}</b>` : `<a href="#" data-crumb="${i}" style="color:#7fb2ff">📁 ${esc(x)}</a>`).join(' <span class="dim">›</span> ');
+  const crumbs = () => [S.roots.find(r => r.id === S.root).name, ...S.path].map((x, i, all) => i === all.length - 1 ? `<b>📁 ${esc(x)}</b>` : `<a href="#" data-crumb="${i}" style="color:var(--link)">📁 ${esc(x)}</a>`).join(' <span class="dim">›</span> ');
   const listHTML = () => {
     const q = S.q.trim().toLowerCase(), ds = S.dirs.filter(d => !q || d.toLowerCase().includes(q));
-    const row = (attr, txt) => `<div ${attr} style="padding:7px 12px;cursor:pointer;border-bottom:1px solid #2a2f3d">${txt}</div>`;
+    const row = (attr, txt) => `<div ${attr} style="padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--line)">${txt}</div>`;
     return (S.path.length ? row('data-up="1"', '📁 <span class="dim">.. (een map omhoog)</span>') : '') + ds.map(d => row(`data-dir="${esc(d)}"`, '📁 ' + esc(d))).join('')
       + (ds.length || (S.have || []).length ? '' : `<div class="dim" style="padding:12px">${S.dirs.length ? 'Geen mappen die passen bij je zoekopdracht' : 'Geen submappen'}</div>`)
-      + (S.have || []).filter(f => !q || f.toLowerCase().includes(q)).map(f => `<div class="dim" style="padding:5px 12px;border-bottom:1px solid #2a2f3d">📄 ${esc(f)}</div>`).join('');
+      + (S.have || []).filter(f => !q || f.toLowerCase().includes(q)).map(f => `<div class="dim" style="padding:5px 12px;border-bottom:1px solid var(--line)">📄 ${esc(f)}</div>`).join('');
   };
   const draw = () => {
-    el.innerHTML = `<div style="background:#232733;border-radius:12px;width:min(640px,95vw);max-height:92vh;overflow:auto;padding:22px">
+    el.innerHTML = `<div style="background:var(--bar);border-radius:12px;width:min(640px,95vw);max-height:92vh;overflow:auto;padding:22px">
 <h3 style="margin-top:0">Modellen uploaden</h3>
 ${S.roots.length ? `${S.scoped ? `<p class="dim">Je uploadt in je eigen map.${S.quota ? ` Opslagruimte: ${S.used} van ${S.quota} MB gebruikt.` : ''}</p>` : '<label>Root folder</label>'}<select style="${S.scoped ? 'display:none' : ''}" id="ur" ${S.busy ? 'disabled' : ''}>${S.roots.map(r => `<option value="${r.id}" ${r.id === S.root ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select>
 <label>Map</label><div id="ucr" style="margin-bottom:6px">${crumbs()}</div>
 <input id="uq" placeholder="Zoek in deze map…" autocomplete="off" ${S.busy ? 'disabled' : ''} value="${esc(S.q)}">
-<div id="udl" style="margin-top:6px;border:1px solid #3a4052;border-radius:8px;height:210px;overflow:auto;background:#1c1f29">${listHTML()}</div>
+<div id="udl" style="margin-top:6px;border:1px solid var(--bd);border-radius:8px;height:210px;overflow:auto;background:var(--bg)">${listHTML()}</div>
 <div class="row" style="margin-top:8px"><input id="unew" placeholder="Of een nieuwe map in deze map (optioneel)" ${S.busy ? 'disabled' : ''}></div>
 <label>Categorie(ën) (optioneel)</label><div class="chips" style="padding:0">${cats.map(c => `<label style="margin-right:12px;white-space:nowrap"><input type="checkbox" data-cat="${c.id}" ${S.busy ? 'disabled' : ''}> ${esc(c.name)}</label>`).join('') || '<span class="dim">Nog geen categorieën</span>'}</div>
 ${S.scoped ? `<label><input type="checkbox" id="ushare" ${S.share ? 'checked' : ''} ${S.busy ? 'disabled' : ''}> Delen met andere leerlingen en scholen</label>` : ''}
@@ -1011,7 +1014,7 @@ function overlay(html, id = 'ovl') {
   const old = document.getElementById(id); if (old && old.remove) old.remove();
   const el = document.createElement('div'); el.id = id;
   el.style.cssText = 'position:fixed;inset:0;background:#000b;z-index:10;display:flex;align-items:center;justify-content:center';
-  el.innerHTML = `<div style="background:#232733;border-radius:12px;width:min(680px,95vw);max-height:92vh;overflow:auto;padding:22px">${html}</div>`;
+  el.innerHTML = `<div style="background:var(--bar);border-radius:12px;width:min(680px,95vw);max-height:92vh;overflow:auto;padding:22px">${html}</div>`;
   document.body.appendChild(el); return el;
 }
 function openRequest(m) {
@@ -1254,8 +1257,8 @@ function showLogin(msg) {
   loginUp = true;
   const pw = !ME.ms_only || /[?&]lokaal\b/.test(location.search);  // alleen Microsoft: het wachtwoordformulier blijft verborgen (noodingang: ?lokaal=1 voor lokale beheerders)
   $('#nav').innerHTML = ''; $('#top').style.display = 'none'; $('#banner').style.display = 'none'; closeModal();
-  $('#view').innerHTML = `<div class="login"><img src="/static/logo.svg" alt="" width="72" height="72" style="align-self:center"><h2 style="text-align:center;margin:0">Model<span style="color:#8fb0ff">arr</span> School</h2><p class="dim">Log in om verder te gaan.</p>${ME.ms ? msButton : ''}${pw ? `${ME.ms ? '<p class="dim" style="text-align:center;margin:4px 0">of met een lokaal account</p>' : ''}<input id="lu" placeholder="Gebruikersnaam of e-mailadres" autocomplete="username"><input id="lp" type="password" placeholder="Wachtwoord" autocomplete="current-password"><button class="p" id="lb">Inloggen</button>` : ''}<div class="err" id="le">${esc(msg || '')}</div>${!pw ? '<a href="/?lokaal=1" class="dim" style="text-align:center;font-size:12px">Lokale beheerder? Inloggen met wachtwoord</a>' : ''}${langBlock()}</div>`;
+  $('#view').innerHTML = `<div class="login"><img src="/static/logo.svg" alt="" width="72" height="72" style="align-self:center"><h2 style="text-align:center;margin:0">Model<span style="color:var(--link)">arr</span> School</h2><p class="dim">Log in om verder te gaan.</p>${ME.ms ? msButton : ''}${pw ? `${ME.ms ? '<p class="dim" style="text-align:center;margin:4px 0">of met een lokaal account</p>' : ''}<input id="lu" placeholder="Gebruikersnaam of e-mailadres" autocomplete="username"><input id="lp" type="password" placeholder="Wachtwoord" autocomplete="current-password"><button class="p" id="lb">Inloggen</button>` : ''}<div class="err" id="le">${esc(msg || '')}</div>${!pw ? '<a href="/?lokaal=1" class="dim" style="text-align:center;font-size:12px">Lokale beheerder? Inloggen met wachtwoord</a>' : ''}${langBlock()}${themeBlock()}</div>`;
   const go = async () => { try { await api('/api/login', 'POST', {username: $('#lu').value, password: $('#lp').value}); location.reload(); } catch (e) { $('#le').textContent = e.message; } };
-  $('#view').onclick = e => { if (e.target.dataset.lang) I18N.setLang(e.target.dataset.lang); }; if ($('#lb')) { $('#lb').onclick = go; $('#view').onkeydown = e => { if (e.key === 'Enter') go(); }; $('#lu').focus(); }
+  $('#view').onclick = e => { if (themeClick(e)) return; if (e.target.dataset.lang) I18N.setLang(e.target.dataset.lang); }; if ($('#lb')) { $('#lb').onclick = go; $('#view').onkeydown = e => { if (e.key === 'Enter') go(); }; $('#lu').focus(); }
 }
 boot();
