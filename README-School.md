@@ -64,6 +64,9 @@ Eerste regel met kolomnamen (`;` of `,`): `naam`, `klas`, optioneel `gebruikersn
 
 **Nieuw schooljaar: klassen bijwerken.** Importeer het bestand opnieuw met `gebruikersnaam` (of `email`) en `klas`. Leerlingen die al bestaan in jouw school worden bijgewerkt (klas, en de naam als die in het bestand staat) en krijgen géén nieuw wachtwoord; nieuwe leerlingen worden aangemaakt. Op alleen een naam wordt niet gekoppeld, omdat twee leerlingen dezelfde naam kunnen hebben. Een gebruikersnaam van een andere school wordt niet aangeraakt. Je ziet vooraf hoeveel leerlingen worden aangemaakt en bijgewerkt. Een klas kun je ook per leerling aanpassen op de pagina Leerlingen.
 
+## Weergave
+Licht, donker of automatisch (volgt je apparaat): kies met de knoppen ☀ ☾ A onder de taalknoppen, ook op de inlogpagina. Standaard blijft de app donker.
+
 ## Privacy
 
 - Een leerling ziet bij andermans model, van de eigen school, alleen de **voornaam**; bij een model van een andere school alleen de **schoolnaam**.

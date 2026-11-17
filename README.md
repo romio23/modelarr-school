@@ -540,6 +540,10 @@ Wil je ook de thumbnails terug, pak dan het bijbehorende zip-bestand uit in de m
 
 Zet de back-upmap ook in een back-up buiten het huis (bijvoorbeeld Hyper Backup op een Synology): een back-up die op dezelfde locatie staat als het origineel, helpt niet bij brand of diefstal.
 
+## Weergave (licht / donker)
+Onder de taalknoppen staan drie knoppen: ☀ licht, ☾ donker en **A** automatisch (volgt het licht/donker-instelling van je apparaat). De keuze wordt per browser onthouden; zonder keuze blijft de app donker, zoals voorheen. Ook de inlogpagina heeft de knoppen. De thumbnails blijven donker; ze zijn plaatjes die de server maakt.
+- De kleuren staan als variabelen bovenaan `static/style.css` (`:root` voor donker, `:root[data-theme=light]` voor licht). Wil je een kleur aanpassen, dan doe je dat daar.
+
 ## Taal (Nederlands / English)
 Linksonder in de navigatie (en op de inlogpagina) staan de knoppen NL en EN. De keuze wordt per browser onthouden; zonder keuze volgt de app de taal van de browser.
 - Nederlands is de brontaal. De Engelse tekst staat in `static/i18n-en.js` (Nederlandse tekst, Engelse tekst) en wordt in de browser op de pagina toegepast, ook op meldingen van de server. Namen van modellen, categorieën en notities worden nooit vertaald.

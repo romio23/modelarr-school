@@ -37,7 +37,7 @@ sb.fetch = async (url, o = {}) => {
   catch (e) { return {ok: false, status: e.status || 400, statusText: 'Bad Request', json: async () => ({error: e.message, login: e.login})}; }
 };
 const ctx = vm.createContext(sb);
-for (const f of ['i18n-en.js', 'i18n.js']) vm.runInContext(fs.readFileSync(path.join(here, '..', 'static', f), 'utf8'), ctx, {filename: f});
+for (const f of ['theme.js', 'i18n-en.js', 'i18n.js']) vm.runInContext(fs.readFileSync(path.join(here, '..', 'static', f), 'utf8'), ctx, {filename: f});
 vm.runInContext(src, ctx, {filename: 'static/app.js'});
 vm.runInContext('var __origRoute = route, __origPoll = poll;', ctx);  // om na onderdelen die ze vervangen de echte functies terug te zetten
 let ok = 0, bad = 0;

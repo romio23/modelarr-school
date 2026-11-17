@@ -1,0 +1,10 @@
+const t=(n,ok)=>console.log(ok?'OK  ':'FOUT',n);
+buildNav(); const nav=out['#nav'].innerHTML;
+t('navigatie: Licht/Donker/Automatisch-knoppen aanwezig, standaard donker gemarkeerd', /data-theme="light" class=""/.test(nav)&&/data-theme="dark" class="p"/.test(nav)&&/data-theme="auto" class=""/.test(nav));
+t('standaard thema is donker', THEME.get()==='dark'&&THEME.eff()==='dark');
+t('klik op de themaknop wordt afgehandeld', themeClick({target:{dataset:{theme:'light'}}})===true);
+t('licht wordt opgeslagen en gebruikt', localStorage.getItem('theme')==='light'&&THEME.eff()==='light'&&document.documentElement.dataset.theme==='light');
+t('een klik die geen themaknop is wordt niet afgehandeld', themeClick({target:{dataset:{}}})===false);
+THEME.set('auto'); t('automatisch volgt het apparaat (hier: donker)', THEME.get()==='auto'&&THEME.eff()==='dark');
+THEME.set('dark'); localStorage.removeItem('theme');
+showLogin(); t('inlogpagina: themaknoppen aanwezig', out['#view'].innerHTML.includes('data-theme="light"'));
