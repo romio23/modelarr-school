@@ -168,13 +168,13 @@ username=YOURUSERNAME
 password=YOURPASSWORD
 EOT
 chmod 600 /root/.smbcred
-echo '//192.168.1.10/3d /mnt/3d-modellen cifs credentials=/root/.smbcred,ro,vers=3.0,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30 0 0' >> /etc/fstab
+echo '//192.168.1.10/3d /mnt/3d-modellen cifs credentials=/root/.smbcred,ro,vers=3.0,iocharset=utf8,nofail,_netdev,x-systemd.after=network-online.target,x-systemd.mount-timeout=30 0 0' >> /etc/fstab
 systemctl daemon-reload
 mount -a
 ls /mnt/3d-modellen
 ```
 
-The last command must show your folders. `ro` means read-only. `x-systemd.automount` makes sure the share is only mounted when something opens the folder, and that it is tried again later if the NAS was still off at startup (see "Share after a restart" below). If you want Modelarr to be allowed to rename files or move them to the trash, use `rw` and give the account write permission on the Synology.
+The last command must show your folders. `ro` means read-only. `x-systemd.after=network-online.target` makes mounting wait until the network is up. If the NAS is still off at startup, the timer from `sh tools/mount-retry.sh` tries again every minute (see "Share after a restart" below; `install-lxc.sh` turns that timer on by itself). If you want Modelarr to be allowed to rename files or move them to the trash, use `rw` and give the account write permission on the Synology.
 
 Is there already a line for this share in `/etc/fstab` and do you want to change an option? Remove the old line (`nano /etc/fstab`), run `umount /mnt/3d-modellen` and then `mount -a`. `mount -o remount` does not work for CIFS options.
 
@@ -207,7 +207,7 @@ hostname -I
 
 ```
 mkdir -p /mnt/back-ups
-echo '//192.168.1.10/Backups /mnt/back-ups cifs credentials=/root/.smbcred,rw,vers=3.0,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30 0 0' >> /etc/fstab
+echo '//192.168.1.10/Backups /mnt/back-ups cifs credentials=/root/.smbcred,rw,vers=3.0,iocharset=utf8,nofail,_netdev,x-systemd.after=network-online.target,x-systemd.mount-timeout=30 0 0' >> /etc/fstab
 systemctl daemon-reload
 mount -a
 mkdir -p /mnt/back-ups/modelarr
@@ -242,13 +242,13 @@ The database and thumbnails are kept. Your existing `/etc/modelarr.env` is not o
 | `mount error(22): Invalid argument` | Usually a duplicate or incorrect line in `/etc/fstab`, or `mount -o remount` on a CIFS mount. Remove the old line, `umount` and `mount -a`. |
 | `Operation not permitted` | The SMB/CIFS feature is not turned on (step 2), or the container is unprivileged. |
 | `mount: ... could not resolve address` | Check the IP address or name of the NAS and whether the container has network (`ping 192.168.1.10`). |
-| The share is empty after a restart | The NAS was not on yet when the container started. Run `mount -a`; Modelarr sees the share again within a minute. Prevent it with `x-systemd.automount` in the fstab line (see below). |
+| The share is empty after a restart | The NAS was not on yet when the container started. Run `mount -a`; Modelarr sees the share again within a minute. Prevent it with the retry timer (see below). |
 
 **Share after a restart**
 
 If the NAS is still off (or the network is not ready yet) when the container starts, `nofail` lets the container start anyway, but without the share: `/mnt/3d-modellen` is then an empty folder. That is why:
 
-1. **Use `x-systemd.automount`** in the fstab line, as in step 4. The share is then mounted as soon as Modelarr opens the folder, and tried again on a next attempt. Do you already have an old line without these options? Change it with `nano /etc/fstab`, then run `systemctl daemon-reload`, `umount /mnt/3d-modellen` and `mount -a`.
+1. **Let the share be mounted again.** In an LXC container `x-systemd.automount` does not work (systemd says "automount unsupported"). So run `sh tools/mount-retry.sh` once (`install-lxc.sh` does this itself): a timer then tries to mount the missing share every minute, even if the NAS starts later than the container. Use `x-systemd.after=network-online.target,x-systemd.mount-timeout=30` in the fstab line, as in step 4. Do you have an old line with `x-systemd.automount`? Change it with `nano /etc/fstab`, then run `systemctl daemon-reload`, `umount /mnt/3d-modellen` and `mount -a`. On a normal Linux host or VM (so also the Docker variant above) `x-systemd.automount` does work.
 2. **The service waits for the network shares.** `install-lxc.sh` puts `After=` and `Wants=remote-fs.target` in the service. Do you run Modelarr with Docker in an LXC (or on another Linux host)? Then make Docker wait too:
    ```
    systemctl edit docker

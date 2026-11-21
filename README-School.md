@@ -79,8 +79,9 @@ Licht, donker of automatisch (volgt je apparaat): kies met de knoppen ☀ ☾ A 
 
 1. De leerling opent een model en kiest **Print aanvragen**: kleur(en) (maximaal 4), aantal en een opmerking.
 2. De medewerker van de school van de leerling ziet de aanvraag onder **Printaanvragen**, slicet het model zelf en legt het gesliced bestand (`.3mf`, `.gcode`, `.bgcode`) bij de aanvraag. De status wordt dan *Bezig*.
-3. De medewerker zet de aanvraag op *Klaar* (met een bericht, bijvoorbeeld waar de print ligt) of *Afgewezen*.
-4. De leerling ziet de status. Zolang een aanvraag *Open* is kan de leerling hem intrekken.
+3. De medewerker zet de aanvraag op *Klaar* (met een bericht, bijvoorbeeld waar de print ligt) of *Afgewezen*. Kan er nu niet geprint worden (bijvoorbeeld door een leeg filament), dan zet de medewerker hem op *In de wacht* met een bericht. Een aanvraag in de wacht blijft bij de lopende aanvragen staan, maar telt niet mee in de pop-up "er wacht werk op je".
+4. De leerling ziet de status en het bericht. Zolang een aanvraag *Open* of *In de wacht* is kan de leerling hem intrekken.
+5. **Medewerkers kunnen zelf ook printjes aanvragen** (knop *Print aanvragen* bij een model). Die staan in dezelfde lijst, met *(jij)* erbij. Kies **Mijn aanvragen** in de lijst bovenaan om alleen je eigen aanvragen te zien; een open aanvraag of een aanvraag in de wacht kun je met *Intrekken* weer terugnemen.
 
 ## Inloggen met Microsoft (Entra ID)
 
