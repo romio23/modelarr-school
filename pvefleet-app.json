@@ -1,0 +1,14 @@
+{
+  "name": "modelarr-school",
+  "title": "Modelarr School",
+  "version": "1.6.0",
+  "type": "systemd",
+  "dir": "/opt/modelarr",
+  "keep": ["config"],
+  "service": "modelarr",
+  "venv": "venv",
+  "requirements": "requirements.txt",
+  "health": {"port": 8765, "path": "/", "timeout": 90},
+  "github": "romio23/modelarr-school",
+  "description": "Modelarr for schools (3D model library with students, staff and print requests)"
+}
