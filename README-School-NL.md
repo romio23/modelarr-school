@@ -5,6 +5,8 @@
 Een aparte versie van [Modelarr](README-NL.md) voor scholen: leerlingen en medewerkers bewaren en delen hun 3D-modellen in één bibliotheek, en leerlingen kunnen bij een medewerker een print aanvragen. Eén installatie kan meerdere scholen bedienen.
 
 > Deze app is gemaakt met behulp van [Claude](https://claude.ai/) (Anthropic). Dit is een eerste versie.
+>
+> Versienummers lopen gelijk met Modelarr: *school-1.6.0* is de schoolversie van Modelarr 1.6.0 (releases op GitHub heten `v1.6.0`). De Apps-pagina van [PVE Fleet](https://github.com/romio23/PVE-fleet) kan de nieuwste release zelf ophalen (`pvefleet-app.json`).
 
 ## Screenshots
 

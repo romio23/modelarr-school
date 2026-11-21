@@ -5,6 +5,8 @@
 A separate version of [Modelarr](README.md) for schools: students and staff keep and share their 3D models in one library, and students can ask a staff member to print something for them. One installation can serve several schools.
 
 > This app was built with the help of [Claude](https://claude.ai/) (Anthropic). This is a first version.
+>
+> Version numbers follow Modelarr: *school-1.6.0* is the school version of Modelarr 1.6.0 (releases on GitHub are tagged `v1.6.0`). The Apps page of [PVE Fleet](https://github.com/romio23/PVE-fleet) can fetch the latest release by itself (`pvefleet-app.json`).
 
 ## Screenshots
 

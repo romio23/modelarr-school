@@ -80,7 +80,7 @@ st = [x for x in kees.get('/api/requests').get_json()['requests'] if x['id'] == 
 other = [x for x in kees.get('/api/requests').get_json()['requests'] if x['id'] != qid][0]['id']
 check('leerling kan open aanvraag intrekken; een afgeronde niet', kees.post(f'/api/requests/{other}/cancel', headers=H).status_code == 200 and kees.post(f'/api/requests/{qid}/cancel', headers=H).status_code == 409)
 check('andermans aanvraag intrekken: 404', jan.post(f'/api/requests/{qid}/cancel', headers=H).status_code == 404)
-# in de wacht + aanvragen door medewerkers (0.8.0)
+# in de wacht + aanvragen door medewerkers
 r = jan.post('/api/requests', json=dict(model_id=mid['auto'], colors=['Wit'], copies=1), headers=H); jid = r.get_json()['id']
 check('medewerker zet een aanvraag "in de wacht" met bericht', mees.post(f'/api/requests/{jid}', json=dict(status='hold', staff_note='Wacht op wit filament'), headers=H).status_code == 200)
 st = [x for x in jan.get('/api/requests').get_json()['requests'] if x['id'] == jid][0]

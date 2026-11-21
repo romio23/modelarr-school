@@ -10,7 +10,7 @@ import render
 import integrations as INT
 from PIL import Image
 
-VERSION = 'school-0.8.0'
+VERSION = 'school-1.6.0'
 BASE = os.path.dirname(os.path.abspath(__file__))
 CONFIG = os.path.abspath(os.environ.get('CONFIG_DIR', os.path.join(BASE, 'config')))
 BACKUP_ENV = os.environ.get('BACKUP_DIR', '').strip()  # standaard back-upmap (de instelling in de app gaat voor)
