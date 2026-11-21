@@ -517,6 +517,29 @@ async function startViewer(box, m, plate = 0) {
     (function loop() { if (v.stop) return; oc.update(); r.render(sc, cam); requestAnimationFrame(loop); })();
   } catch (e) { if (!v.stop) box.innerHTML = (m.status === 'ok' ? `<div style="text-align:center"><img src="/api/thumb/${m.id}.png?v=${m.thumb_at}" style="max-width:90%;max-height:60vh">` : '<div style="text-align:center">') + `<p class="dim">Geen 3D-weergave voor dit bestand (${esc(e.message)})</p></div>`; }
 }
+// Wachtwoord vragen in een eigen venster: het veld toont stippen (het browservenster prompt() toont de tekst gewoon), met een vakje om het te tonen
+function askPassword(msg, min = 8) {
+  return new Promise(res => {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;background:#000b;z-index:50;display:flex;align-items:center;justify-content:center';
+    el.innerHTML = `<form style="background:var(--bar);border:1px solid var(--bd);border-radius:12px;width:min(440px,92vw);padding:20px;display:flex;flex-direction:column;gap:10px">
+<div>${esc(msg)}</div><input type="password" id="pwi" autocomplete="new-password" style="width:100%">
+<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="pws"> Toon wachtwoord</label>
+<div id="pwe" class="warn" style="display:none"></div>
+<div class="row" style="justify-content:flex-end"><button type="button" id="pwc">Annuleren</button><button class="p" type="submit">OK</button></div></form>`;
+    document.body.appendChild(el);
+    const inp = el.querySelector('#pwi'), done = v => { el.remove(); res(v); };
+    inp.focus();
+    el.querySelector('#pws').onchange = e => { inp.type = e.target.checked ? 'text' : 'password'; };
+    el.querySelector('#pwc').onclick = () => done(null);
+    el.onkeydown = e => { if (e.key === 'Escape') done(null); };
+    el.querySelector('form').onsubmit = e => {
+      e.preventDefault();
+      if (inp.value.length < min) { const m = el.querySelector('#pwe'); m.textContent = `Het wachtwoord moet minstens ${min} tekens hebben`; m.style.display = 'block'; return; }
+      done(inp.value);
+    };
+  });
+}
 const modalDone = async msg => { await reloadLib(); if (openId) $('#side').innerHTML = sideHTML(cur()); toast(msg); };
 $('#modal').onclick = run(async e => {
   const t = e.target;
@@ -866,7 +889,7 @@ V['settings/users'] = async () => {
       await load();
     }
     if (t.dataset.em) { const v = prompt(`E-mailadres van ${t.dataset.n} (leeg laten om te wissen):`, t.dataset.v); if (v === null) return; await api('/api/users/' + t.dataset.em, 'PUT', {email: v}); toast('E-mailadres opgeslagen'); await load(); }
-    if (t.dataset.pw) { const p = prompt(`Nieuw wachtwoord voor ${t.dataset.n} (minstens 8 tekens):`); if (!p) return; await api('/api/users/' + t.dataset.pw, 'PUT', {password: p}); toast('Wachtwoord gewijzigd'); }
+    if (t.dataset.pw) { const p = await askPassword(`Nieuw wachtwoord voor ${t.dataset.n} (minstens 8 tekens):`); if (!p) return; await api('/api/users/' + t.dataset.pw, 'PUT', {password: p}); toast('Wachtwoord gewijzigd'); }
     if (t.dataset.del && confirm(`Account "${t.dataset.n}" verwijderen?`)) { await api('/api/users/' + t.dataset.del, 'DELETE'); toast('Account verwijderd'); await load(); }
     if (t.id === 'nclear' && confirm('Alle accounts verwijderen en inloggen uitzetten?')) { await api('/api/users/clear', 'POST', {confirm: true}); toast('Inloggen staat uit'); ME = await api('/api/me'); buildNav(); route(); }
   });
@@ -1008,7 +1031,7 @@ V['system/logs'] = async () => {
 };
 
 // ------------------------------------------------------------ scholen: printaanvragen, meldingen, leerlingen, scholen
-const REQ_ST = {open: 'Open', busy: 'Bezig', done: 'Klaar', rejected: 'Afgewezen', cancelled: 'Ingetrokken'};
+const REQ_ST = {open: 'Open', busy: 'Bezig', hold: 'In de wacht', done: 'Klaar', rejected: 'Afgewezen', cancelled: 'Ingetrokken'};
 const sw = (name, hex) => `<span title="${esc(name)}" style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${esc(hex)};border:1px solid #666;vertical-align:-2px;margin-right:3px"></span>`;
 function overlay(html, id = 'ovl') {
   const old = document.getElementById(id); if (old && old.remove) old.remove();
@@ -1049,17 +1072,17 @@ V.requests = async () => {
   $('#title').textContent = 'Printaanvragen';
   const hex = {}; ((await api('/api/requests/options')).colors || []).forEach(c => hex[c.name] = c.hex);
   const stf = adm() || staff();
-  $('#tools').innerHTML = '<select id="rf"><option value="active">Lopende aanvragen</option><option value="all">Alle aanvragen</option></select>';
+  $('#tools').innerHTML = `<select id="rf"><option value="active">Lopende aanvragen</option><option value="all">Alle aanvragen</option>${stf ? '<option value="mine">Mijn aanvragen</option>' : ''}</select>`;
   const load = run(async () => {
-    const rs = (await api('/api/requests' + ($('#rf').value === 'active' ? '?status=active' : ''))).requests;
+    const rs = (await api('/api/requests' + ({active: '?status=active', mine: '?mine=1'}[$('#rf').value] || ''))).requests;
     const cols = r => r.colors.length ? r.colors.map(c => sw(c, hex[c] || '#888') + esc(c)).join(' ') : '<span class="dim">geen voorkeur</span>';
     if (!rs.length) { $('#view').innerHTML = '<p class="dim">Geen aanvragen. Open een model in de bibliotheek en kies "Print aanvragen".</p>'; return; }
     $('#view').innerHTML = stf
-      ? tbl(['Leerling', 'Model', 'Kleuren', 'Aantal', 'Opmerking', 'Gesliced bestand', 'Status', 'Opmerking aan leerling', ''], rs.map(r => `<tr data-r="${r.id}"><td>${esc(r.requester)}<br><span class="dim">${fdate(r.created)}</span></td><td>${r.model_id ? `<a href="/api/file/${r.model_id}" download title="Model downloaden">⬇ ${esc(r.model)}</a>` : esc(r.model)}</td><td>${cols(r)}</td><td>${r.copies}</td><td>${esc(r.note)}</td>
+      ? tbl(['Aanvrager', 'Model', 'Kleuren', 'Aantal', 'Opmerking', 'Gesliced bestand', 'Status', 'Opmerking aan aanvrager', ''], rs.map(r => `<tr data-r="${r.id}"><td>${esc(r.requester)}${r.mine ? ' <b>(jij)</b>' : ''}<br><span class="dim">${fdate(r.created)}</span></td><td>${r.model_id ? `<a href="/api/file/${r.model_id}" download title="Model downloaden">⬇ ${esc(r.model)}</a>` : esc(r.model)}</td><td>${cols(r)}</td><td>${r.copies}</td><td>${esc(r.note)}</td>
 <td>${r.has_file ? `<a href="/api/requests/${r.id}/file">⬇ ${esc(r.sliced_name)}</a><br>` : ''}<input type="file" data-f="${r.id}" accept=".3mf,.gcode,.bgcode"></td>
-<td><select data-st="${r.id}">${['open', 'busy', 'done', 'rejected'].map(s => `<option value="${s}" ${r.status === s ? 'selected' : ''}>${REQ_ST[s]}</option>`).join('')}${r.status === 'cancelled' ? '<option selected value="cancelled" disabled>Ingetrokken</option>' : ''}</select></td>
-<td><input data-n="${r.id}" value="${esc(r.staff_note)}" maxlength="300"></td><td><button data-save="${r.id}">Opslaan</button></td></tr>`))
-      : tbl(['Datum', 'Model', 'Kleuren', 'Aantal', 'Status', 'Bericht van de medewerker', ''], rs.map(r => `<tr><td class="dim">${fdate(r.created)}</td><td>${esc(r.model)}</td><td>${cols(r)}</td><td>${r.copies}</td><td><b>${REQ_ST[r.status] || r.status}</b></td><td>${esc(r.staff_note)}</td><td>${r.status === 'open' ? `<button data-cx="${r.id}">Intrekken</button>` : ''}</td></tr>`));
+<td><select data-st="${r.id}">${['open', 'busy', 'hold', 'done', 'rejected'].map(s => `<option value="${s}" ${r.status === s ? 'selected' : ''}>${REQ_ST[s]}</option>`).join('')}${r.status === 'cancelled' ? '<option selected value="cancelled" disabled>Ingetrokken</option>' : ''}</select></td>
+<td><input data-n="${r.id}" value="${esc(r.staff_note)}" maxlength="300"></td><td><button data-save="${r.id}">Opslaan</button>${r.mine && ['open', 'hold'].includes(r.status) ? ` <button class="d" data-cx="${r.id}">Intrekken</button>` : ''}</td></tr>`))
+      : tbl(['Datum', 'Model', 'Kleuren', 'Aantal', 'Status', 'Bericht van de medewerker', ''], rs.map(r => `<tr><td class="dim">${fdate(r.created)}</td><td>${esc(r.model)}</td><td>${cols(r)}</td><td>${r.copies}</td><td><b>${REQ_ST[r.status] || r.status}</b></td><td>${esc(r.staff_note)}</td><td>${['open', 'hold'].includes(r.status) ? `<button data-cx="${r.id}">Intrekken</button>` : ''}</td></tr>`));
   });
   $('#rf').onchange = load; onRev = load;
   $('#view').onclick = run(async e => {

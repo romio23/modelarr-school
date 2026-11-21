@@ -10,7 +10,7 @@ import render
 import integrations as INT
 from PIL import Image
 
-VERSION = 'school-0.7.0'
+VERSION = 'school-0.8.0'
 BASE = os.path.dirname(os.path.abspath(__file__))
 CONFIG = os.path.abspath(os.environ.get('CONFIG_DIR', os.path.join(BASE, 'config')))
 BACKUP_ENV = os.environ.get('BACKUP_DIR', '').strip()  # standaard back-upmap (de instelling in de app gaat voor)
@@ -1741,7 +1741,7 @@ def school_users_remove():
             with db() as c:
                 c.execute('UPDATE models SET owner_id=NULL, shared=0 WHERE owner_id=?', (u['id'],))
         with db() as c:
-            c.execute("UPDATE print_requests SET status='cancelled', updated=? WHERE requester_id=? AND status IN ('open','busy')", (time.time(), u['id']))
+            c.execute("UPDATE print_requests SET status='cancelled', updated=? WHERE requester_id=? AND status IN ('open','busy','hold')", (time.time(), u['id']))
             c.execute('DELETE FROM users WHERE id=?', (u['id'],))
     OKAUTH.clear()
     hist('Leerlingen', f"{len(us) - failed} leerling(en) verwijderd, bestanden naar de prullenbak" if files == 'delete' else f"{len(us) - failed} leerling(en) verwijderd, bestanden bewaard")
@@ -3402,7 +3402,7 @@ def model_hide(mid):
 
 
 # --- printaanvragen: leerling vraagt, medewerker slicet, print en meldt klaar
-REQ_STATUS = ('open', 'busy', 'done', 'rejected', 'cancelled')
+REQ_STATUS = ('open', 'busy', 'hold', 'done', 'rejected', 'cancelled')
 REQ_EXT = ('.3mf', '.gcode', '.bgcode')
 
 
@@ -3438,12 +3438,14 @@ def requests_list():
         q += ' AND requester_id=?'; a.append(u['id'])
     elif u['role'] == 'staff':
         q += ' AND school_id=?'; a.append(u.get('school_id'))
+    if request.args.get('mine'):  # medewerkers en beheerders: alleen de aanvragen die ik zelf gedaan heb
+        q += ' AND requester_id=?'; a.append(u['id'])
     st = request.args.get('status')
     if st == 'active':
-        q += " AND status IN ('open','busy')"
+        q += " AND status IN ('open','busy','hold')"
     elif st in REQ_STATUS:
         q += ' AND status=?'; a.append(st)
-    q += ' ORDER BY CASE status WHEN "open" THEN 0 WHEN "busy" THEN 1 ELSE 2 END, created DESC LIMIT 500'
+    q += ' ORDER BY CASE status WHEN "open" THEN 0 WHEN "busy" THEN 1 WHEN "hold" THEN 2 ELSE 3 END, created DESC LIMIT 500'
     with db() as c:
         rows = c.execute(q, a).fetchall()
         names = {r['id']: dict(r) for r in c.execute('SELECT id, username, display_name, klas FROM users')}
@@ -3473,7 +3475,7 @@ def requests_add():
         return jsonify(error='Ongeldig aantal'), 400
     note = str(j.get('note') or '').strip()[:300]
     with db() as c:
-        if c.execute("SELECT COUNT(*) FROM print_requests WHERE requester_id=? AND status IN ('open','busy')", (u['id'],)).fetchone()[0] >= 10:
+        if c.execute("SELECT COUNT(*) FROM print_requests WHERE requester_id=? AND status IN ('open','busy','hold')", (u['id'],)).fetchone()[0] >= 10:
             return jsonify(error='Je hebt al 10 lopende aanvragen. Wacht tot er een klaar is.'), 429
         now = time.time()
         rid = c.execute('INSERT INTO print_requests(model_id, model_name, requester_id, school_id, colors, copies, note, status, created, updated) VALUES(?,?,?,?,?,?,?,?,?,?)',
@@ -3501,7 +3503,7 @@ def _req_get(rid, staff=False):
 def request_update(rid):
     r, j = _req_get(rid, staff=True), request.json or {}
     st = j.get('status', r['status'])
-    if st not in ('open', 'busy', 'done', 'rejected'):
+    if st not in ('open', 'busy', 'hold', 'done', 'rejected'):
         return jsonify(error='Onbekende status'), 400
     note = str(j.get('staff_note', r['staff_note']) or '').strip()[:300]
     with db() as c:
@@ -3516,7 +3518,7 @@ def request_cancel(rid):
     r = _req_get(rid)
     if r['requester_id'] != g.user['id']:
         abort(404)
-    if r['status'] != 'open':
+    if r['status'] not in ('open', 'hold'):
         return jsonify(error='Deze aanvraag is al opgepakt en kan niet meer worden ingetrokken'), 409
     with db() as c:
         c.execute("UPDATE print_requests SET status='cancelled', updated=? WHERE id=?", (time.time(), rid))

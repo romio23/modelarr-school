@@ -47,6 +47,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 UNIT
 systemctl daemon-reload
+sh "$(dirname "$0")/tools/mount-retry.sh" || true   # share opnieuw koppelen als de NAS later opkomt (automount werkt niet in een LXC)
 systemctl enable --now modelarr
 systemctl restart modelarr
 echo "Klaar. Pas /etc/modelarr.env aan (MODELS_DIR) en draai: systemctl restart modelarr"

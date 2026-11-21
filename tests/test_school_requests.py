@@ -80,4 +80,25 @@ st = [x for x in kees.get('/api/requests').get_json()['requests'] if x['id'] == 
 other = [x for x in kees.get('/api/requests').get_json()['requests'] if x['id'] != qid][0]['id']
 check('leerling kan open aanvraag intrekken; een afgeronde niet', kees.post(f'/api/requests/{other}/cancel', headers=H).status_code == 200 and kees.post(f'/api/requests/{qid}/cancel', headers=H).status_code == 409)
 check('andermans aanvraag intrekken: 404', jan.post(f'/api/requests/{qid}/cancel', headers=H).status_code == 404)
+# in de wacht + aanvragen door medewerkers (0.8.0)
+r = jan.post('/api/requests', json=dict(model_id=mid['auto'], colors=['Wit'], copies=1), headers=H); jid = r.get_json()['id']
+check('medewerker zet een aanvraag "in de wacht" met bericht', mees.post(f'/api/requests/{jid}', json=dict(status='hold', staff_note='Wacht op wit filament'), headers=H).status_code == 200)
+st = [x for x in jan.get('/api/requests').get_json()['requests'] if x['id'] == jid][0]
+check('  leerling ziet de status en het bericht', st['status'] == 'hold' and st['staff_note'] == 'Wacht op wit filament')
+check('  een aanvraag in de wacht telt als lopend', jid in [x['id'] for x in jan.get('/api/requests?status=active').get_json()['requests']])
+check('  filter op status hold werkt', [x['id'] for x in mees.get('/api/requests?status=hold').get_json()['requests']] == [jid])
+check('  een ongeldige status wordt geweigerd', mees.post(f'/api/requests/{jid}', json=dict(status='pauze'), headers=H).status_code == 400)
+check('  de melding "wachtend werk" telt een aanvraag in de wacht niet mee', all(x['status'] != 'open' for x in mees.get('/api/requests?status=hold').get_json()['requests']))
+check('  leerling kan een aanvraag in de wacht intrekken', jan.post(f'/api/requests/{jid}/cancel', headers=H).status_code == 200)
+r = mees.post('/api/requests', json=dict(model_id=mid['auto'], colors=['Zwart'], copies=3, note='voor de les'), headers=H); mid_req = r.get_json()['id']
+check('medewerker kan zelf een print aanvragen', r.status_code == 200)
+al = mees.get('/api/requests').get_json()['requests']; own = [x for x in al if x['id'] == mid_req][0]
+check('  de aanvraag staat in de lijst van de school, met mine=true en de naam erbij', own['mine'] is True and own['requester'].startswith('Mees'), own)
+mn = mees.get('/api/requests?mine=1').get_json()['requests']
+check('  filter "mijn aanvragen" toont alleen eigen aanvragen', [x['id'] for x in mn] == [mid_req] and all(x['mine'] for x in mn))
+check('  leerling kan niet bij het mine-filter van een medewerker', all(x['mine'] for x in jan.get('/api/requests?mine=1').get_json()['requests']))
+check('  medewerker zet eigen aanvraag in de wacht en trekt hem in', mees.post(f'/api/requests/{mid_req}', json=dict(status='hold'), headers=H).status_code == 200
+      and mees.post(f'/api/requests/{mid_req}/cancel', headers=H).status_code == 200
+      and [x for x in mees.get('/api/requests').get_json()['requests'] if x['id'] == mid_req][0]['status'] == 'cancelled')
+check('  een medewerker kan andermans aanvraag niet intrekken', (lambda rid_: nel.post(f'/api/requests/{rid_}/cancel', headers=H).status_code == 404)(mees.post('/api/requests', json=dict(model_id=mid['auto']), headers=H).get_json()['id']))
 print('\nAlles goed.' if not bad else '\nFOUT: %s' % bad); sys.exit(1 if bad else 0)

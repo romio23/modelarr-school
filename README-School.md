@@ -1,136 +1,142 @@
-# Modelarr School (voorlopige naam)
+# Modelarr School (working title)
 
-Een aparte versie van [Modelarr](README.md) voor scholen: leerlingen en medewerkers bewaren en delen hun 3D-modellen in één bibliotheek, en leerlingen kunnen bij een medewerker een print aanvragen. Eén installatie kan meerdere scholen bedienen.
+> Dutch version: [README-School-NL.md](README-School-NL.md)
 
-> Deze app is gemaakt met behulp van [Claude](https://claude.ai/) (Anthropic). Dit is een eerste versie.
+A separate version of [Modelarr](README.md) for schools: students and staff keep and share their 3D models in one library, and students can ask a staff member to print something for them. One installation can serve several schools.
+
+> This app was built with the help of [Claude](https://claude.ai/) (Anthropic). This is a first version.
 
 ## Screenshots
 
-Voorbeeldgegevens met verzonnen scholen en leerlingen.
+Sample data with made-up schools and students.
 
-**Bibliotheek (medewerker)**
+**Library (staff member)**
 
-![Bibliotheek](docs/screenshots/school-bibliotheek.png)
+![Library](docs/screenshots/school-bibliotheek.png)
 
-**Printaanvragen van leerlingen**
+**Print requests from students**
 
-![Printaanvragen](docs/screenshots/school-printaanvragen.png)
+![Print requests](docs/screenshots/school-printaanvragen.png)
 
-**Leerlingen beheren**
+**Managing students**
 
-![Leerlingen](docs/screenshots/school-leerlingen.png)
+![Students](docs/screenshots/school-leerlingen.png)
 
-## Rollen
+## Roles
 
-| Rol | Wat kan het |
+| Role | What it can do |
 |---|---|
-| **Beheerder** | Alles: scholen, medewerkers, instellingen, alle modellen |
-| **Medewerker** | Ziet alle modellen van de eigen school en de algemene bibliotheek, kan mappen van de algemene bibliotheek verbergen, beheert de leerlingen van de eigen school (aanmaken, CSV-import, nieuw wachtwoord, deactiveren), handelt meldingen en printaanvragen af |
-| **Leerling** | Ziet de eigen modellen en alles wat gedeeld is (ook van andere scholen), uploadt in de eigen map, kan delen aan/uit zetten, melden en een print aanvragen |
+| **Administrator** | Everything: schools, staff, settings, all models |
+| **Staff** | Sees all models of their own school and the general library, can hide folders of the general library, manages the students of their own school (create, CSV import, new password, deactivate), handles reports and print requests |
+| **Student** | Sees their own models and everything that is shared (also from other schools), uploads to their own folder, can turn sharing on or off, report a model and request a print |
 
-## Opslag
+## Storage
 
-Alle scholen delen één root folder. Per school en per gebruiker is er een map:
+All schools share one root folder. There is a folder per school and per user:
 
 ```
-<root>/<school>/leerlingen/<leerling>/…
-<root>/<school>/medewerkers/<medewerker>/…
-<root>/<school>/…                          (gemeenschappelijke schoolbibliotheek)
-<root>/<andere map>/…                      (algemene bibliotheek: zichtbaar voor alle leerlingen)
-<root>/<school>/.aanvragen/<id>/…          (gesliced bestand bij een printaanvraag, verborgen)
+<root>/<school>/leerlingen/<student>/…
+<root>/<school>/medewerkers/<staff member>/…
+<root>/<school>/…                          (shared school library)
+<root>/<other folder>/…                    (general library: visible to all students)
+<root>/<school>/.aanvragen/<id>/…          (sliced file of a print request, hidden)
 ```
 
-Modellen buiten de schoolmappen vormen de **algemene bibliotheek**: ze zijn voor iedereen zichtbaar. Een medewerker of beheerder kan onder **Mappen** een map (met alles daarin) verbergen voor leerlingen. De eigenaar van een model in een schoolmap volgt uit de map waarin het staat. Delen aan of uit is alleen een vinkje in de database: er worden geen bestanden verplaatst. Of een nieuw model van een leerling standaard gedeeld wordt, stel je in:
+The folder names `leerlingen` (students) and `medewerkers` (staff) are fixed by the app.
 
-- **Instellingen → Algemeen → Uploads van leerlingen**: de algemene keuze, standaard aan.
-- **Instellingen → Scholen → Uploads delen**: per school *Algemeen* (volgt de algemene keuze), *Standaard aan* of *Standaard uit*.
+Models outside the school folders form the **general library**: they are visible to everyone. A staff member or administrator can hide a folder (with everything in it) from students under **Folders**. The owner of a model in a school folder follows from the folder it is in. Sharing on or off is only a checkmark in the database: no files are moved. Whether a new model from a student is shared by default is set here:
 
-Een leerling kan delen bij het uploaden en per model nog aan- of uitzetten. De instelling geldt ook voor bestanden die rechtstreeks in de map van een leerling worden gezet, bijvoorbeeld via de share. Bestaande modellen veranderen niet als je de instelling wijzigt. Modellen van medewerkers zijn standaard gedeeld.
+- **Settings → General → Student uploads**: the general choice, on by default.
+- **Settings → Schools → Share uploads**: per school *General* (follows the general choice), *On by default* or *Off by default*.
 
-## Installeren
+A student can choose to share when uploading and can still turn it on or off per model. The setting also applies to files that are put straight into a student's folder, for example through the share. Existing models do not change when you change the setting. Models from staff are shared by default.
 
-Hetzelfde als Modelarr (zie [README.md](README.md)). Daarna:
+## Installing
 
-1. Voeg onder **Instellingen → Mediabeheer** de gezamenlijke root folder toe en zet *verplaatsen/verwijderen* aan (nodig om eigen modellen te kunnen verwijderen).
-2. Maak onder **Instellingen → Scholen** per school een school aan, kies de root folder en eventueel een eigen limiet per leerling (MB).
-3. Maak onder **Instellingen → Gebruikers** de medewerkers aan (rol *Medewerker*, kies de school).
-4. Medewerkers maken zelf leerlingen aan onder **Leerlingen**, één voor één of met een CSV.
+The same as Modelarr (see [README.md](README.md)). Then:
 
-Staat de root folder op een NAS-share? Volg dan ook "Share na een herstart" in [README.md](README.md). Is de share niet bereikbaar of onverwacht leeg, dan ziet de beheerder bovenaan een rode balk met het pad. Leerlingen en medewerkers zien alleen een algemene melding, zonder paden van de server. Er wordt in dat geval niets uit de bibliotheek verwijderd.
+1. Under **Settings → Media management**, add the shared root folder and turn on *move/delete* (needed to be able to delete your own models).
+2. Under **Settings → Schools**, create a school for each school, choose the root folder and, if you like, your own limit per student (MB).
+3. Under **Settings → Users**, create the staff accounts (role *Staff*, choose the school).
+4. Staff create students themselves under **Students**, one by one or with a CSV file.
 
-### CSV-import van leerlingen
+Is the root folder on a NAS share? Then also follow "Share after a restart" in [README.md](README.md). If the share cannot be reached or is unexpectedly empty, the administrator sees a red bar with the path at the top. Students and staff only see a general message, without server paths. Nothing is removed from the library in that case.
 
-Eerste regel met kolomnamen (`;` of `,`): `naam`, `klas`, optioneel `gebruikersnaam`, `wachtwoord`, `email`. Alleen `naam` is genoeg: de gebruikersnaam wordt dan afgeleid van de naam en het wachtwoord wordt aangemaakt. Na de import zie je de wachtwoorden één keer, met een knop om ze als CSV te downloaden of af te drukken.
+### Importing students from a CSV file
 
-**Nieuw schooljaar: klassen bijwerken.** Importeer het bestand opnieuw met `gebruikersnaam` (of `email`) en `klas`. Leerlingen die al bestaan in jouw school worden bijgewerkt (klas, en de naam als die in het bestand staat) en krijgen géén nieuw wachtwoord; nieuwe leerlingen worden aangemaakt. Op alleen een naam wordt niet gekoppeld, omdat twee leerlingen dezelfde naam kunnen hebben. Een gebruikersnaam van een andere school wordt niet aangeraakt. Je ziet vooraf hoeveel leerlingen worden aangemaakt en bijgewerkt. Een klas kun je ook per leerling aanpassen op de pagina Leerlingen.
+The first line holds the column names (`;` or `,`): `naam` (name), `klas` (class), optionally `gebruikersnaam` (username), `wachtwoord` (password), `email`. Only `naam` is enough: the username is then derived from the name and a password is generated. After the import you see the passwords once, with a button to download or print them as CSV.
 
-## Weergave
-Licht, donker of automatisch (volgt je apparaat): kies met de knoppen ☀ ☾ A onder de taalknoppen, ook op de inlogpagina. Standaard blijft de app donker.
+**New school year: updating classes.** Import the file again with `gebruikersnaam` (or `email`) and `klas`. Students who already exist in your school are updated (class, and the name if it is in the file) and do **not** get a new password; new students are created. Matching on a name alone is not done, because two students can have the same name. A username that belongs to another school is not touched. Beforehand you see how many students will be created and updated. You can also change a class per student on the Students page.
+
+## Appearance
+
+Light, dark or automatic (follows your device): choose with the ☀ ☾ A buttons below the language buttons, also on the login page. The app stays dark by default.
 
 ## Privacy
 
-- Een leerling ziet bij andermans model, van de eigen school, alleen de **voornaam**; bij een model van een andere school alleen de **schoolnaam**.
-- Medewerkers van de eigen school zien de volledige naam en de klas.
-- Leerlingen zien geen paden op de schijf, geen gebruikerslijst en geen beheerpagina's.
-- Modellen kunnen **gemeld** worden. Een medewerker van de school van het model kan de melding negeren, het model verbergen of verwijderen.
-- Het gaat om gegevens van minderjarigen. Overleg met de functionaris gegevensbescherming over verwerkersovereenkomst, bewaartermijnen en een DPIA.
+- For someone else's model from the student's own school, a student only sees the **first name**; for a model from another school only the **school name**.
+- Staff of the same school see the full name and the class.
+- Students see no paths on disk, no user list and no admin pages.
+- Models can be **reported**. A staff member of the model's school can ignore the report, hide the model or delete it.
+- This involves data of minors. Talk to your data protection officer about a processing agreement, retention periods and a DPIA.
 
-## Printaanvragen
+## Print requests
 
-1. De leerling opent een model en kiest **Print aanvragen**: kleur(en) (maximaal 4), aantal en een opmerking.
-2. De medewerker van de school van de leerling ziet de aanvraag onder **Printaanvragen**, slicet het model zelf en legt het gesliced bestand (`.3mf`, `.gcode`, `.bgcode`) bij de aanvraag. De status wordt dan *Bezig*.
-3. De medewerker zet de aanvraag op *Klaar* (met een bericht, bijvoorbeeld waar de print ligt) of *Afgewezen*.
-4. De leerling ziet de status. Zolang een aanvraag *Open* is kan de leerling hem intrekken.
+1. A student opens a model and chooses **Request a print**: colour(s) (at most 4), number of copies and a note.
+2. The staff member of the student's school sees the request under **Print requests**, slices the model themselves and attaches the sliced file (`.3mf`, `.gcode`, `.bgcode`) to the request. The status then becomes *In progress*.
+3. The staff member sets the request to *Done* (with a message, for example where the print is) or *Rejected*. If printing is not possible right now (for example an empty filament spool), the staff member sets it to *On hold* with a message. A request that is on hold stays in the list of current requests, but does not count in the "work is waiting for you" pop-up.
+4. The student sees the status and the message. As long as a request is *Open* or *On hold*, the student can withdraw it.
+5. **Staff can request prints themselves too** (the *Request a print* button on a model). Those requests appear in the same list, marked *(you)*. Choose **My requests** in the list at the top to see only your own requests; you can take back an open or on-hold request with *Withdraw*.
 
-## Inloggen met Microsoft (Entra ID)
+## Signing in with Microsoft (Entra ID)
 
-Leerlingen en medewerkers loggen in met hun schoolaccount; er hoeven geen wachtwoorden meer uitgedeeld te worden. Rol en school volgen uit de **beveiligingsgroepen** in Microsoft.
+Students and staff sign in with their school account; no passwords need to be handed out any more. Role and school follow from the **security groups** in Microsoft.
 
-1. Maak in het Entra-beheercentrum een **App-registratie** (alleen deze tenant, type *Web*). Voeg als omleidings-URL toe: `https://<jouw-adres>/api/ms/callback` (staat ook op de instellingenpagina). Microsoft eist https, behalve voor `localhost`.
-2. Geef de app het API-recht **User.Read** (delegated) en maak een **clientgeheim** aan.
-3. Zet bij *Token configuration* een **groepsclaim** aan (*Security groups*). Heeft iemand meer dan 200 groepen, dan haalt Modelarr de lijst zelf op bij Graph.
-4. Open in Modelarr **Instellingen → Microsoft**: vul Tenant-ID, Client-ID en het geheim in, en eventueel het groep-ID van de beheerders.
-5. Vul bij **Instellingen → Scholen** per school het groep-ID van de leerlingen en van de medewerkers in.
-6. Zet *Inloggen met Microsoft* aan. Op de inlogpagina staat nu een Microsoft-knop.
+1. In the Entra admin center, create an **app registration** (this tenant only, type *Web*). Add the redirect URL `https://<your-address>/api/ms/callback` (it is also shown on the settings page). Microsoft requires https, except for `localhost`.
+2. Give the app the API permission **User.Read** (delegated) and create a **client secret**.
+3. Under *Token configuration*, turn on a **groups claim** (*Security groups*). If someone has more than 200 groups, Modelarr fetches the list itself from Graph.
+4. In Modelarr open **Settings → Microsoft**: enter the tenant ID, client ID and the secret, and optionally the group ID of the administrators.
+5. Under **Settings → Schools**, enter for each school the group ID of the students and of the staff.
+6. Turn on *Sign in with Microsoft*. The login page now has a Microsoft button.
 
-De **klas** van een leerling wordt bij elke login overgenomen uit het veld *Afdeling* (Department) van het Microsoft-account (aan/uit onder Instellingen → Microsoft). Is het veld leeg, dan blijft de bestaande klas staan. Een medewerker met een andere klas dan Microsoft opgeeft, ziet dus bij de volgende login de Microsoft-waarde.
+A student's **class** is taken over at every login from the *Department* field of the Microsoft account (on or off under Settings → Microsoft). If the field is empty, the existing class stays. A staff member whose class differs from what Microsoft says will see the Microsoft value at the next login.
 
-Wie inlogt krijgt de rol van de **hoogste** groep: beheerders, dan medewerkers van een school, dan leerlingen van een school. Iemand zonder bekende groep komt er niet in. Een account wordt bij de eerste keer aangemaakt (met eigen map), een bestaand lokaal account met dezelfde inlognaam of hetzelfde e-mailadres wordt gekoppeld. Bij elke login wordt rol en school opnieuw uit de groepen bepaald: een leerling die van school wisselt, verhuist mee. Een lokale beheerder verliest zijn rechten niet door de koppeling.
+Whoever signs in gets the role of the **highest** group: administrators, then staff of a school, then students of a school. Someone without a known group cannot get in. An account is created the first time (with its own folder); an existing local account with the same sign-in name or the same email address is linked. At every login, role and school are determined again from the groups: a student who changes school moves along. A local administrator does not lose their rights because of the link.
 
-*Alleen Microsoft* verbergt het wachtwoordformulier en weigert wachtwoordinlog van iedereen behalve lokale beheerders (zonder Microsoft-koppeling). Zij loggen in via `https://<jouw-adres>/?lokaal=1`. Maak dus altijd eerst een lokaal beheerdersaccount aan.
+*Microsoft only* hides the password form and refuses password logins from everyone except local administrators (without a Microsoft link). They sign in via `https://<your-address>/?lokaal=1`. So always create a local administrator account first.
 
-### De app alleen voor de juiste mensen beschikbaar maken
+### Making the app available only to the right people
 
-Standaard kan iedereen in de tenant zich bij een app aanmelden. Beperk dat in de **Enterprise-applicatie** (Entra-beheercentrum → Enterprise-applicaties → jouw app):
+By default everyone in the tenant can sign in to an app. Restrict that in the **Enterprise application** (Entra admin center → Enterprise applications → your app):
 
-1. Open **Eigenschappen** en zet **Toewijzing vereist? (Assignment required)** op *Ja*. Wie niet is toegewezen, krijgt van Microsoft een foutmelding (AADSTS50105) en komt Modelarr niet in.
-2. Open **Gebruikers en groepen → Gebruiker/groep toevoegen** en voeg de **groepen** toe die mogen inloggen: de leerlingengroep en de medewerkersgroep van elke school, en de beheerdersgroep. Voeg dus groepen toe en geen losse gebruikers; nieuwe leden van een groep krijgen dan vanzelf toegang. (Voor groepen als toewijzing is een Entra ID P1-licentie nodig, die in onderwijstenants meestal aanwezig is.)
-3. Zorg dat dezelfde groepen zijn ingevuld in Modelarr (Instellingen → Scholen en Microsoft). Modelarr weigert op zijn beurt iedereen die in geen van die groepen zit.
+1. Open **Properties** and set **Assignment required?** to *Yes*. Whoever is not assigned gets an error from Microsoft (AADSTS50105) and cannot get into Modelarr.
+2. Open **Users and groups → Add user/group** and add the **groups** that may sign in: the students group and the staff group of every school, and the administrators group. So add groups, not individual users; new members of a group then get access automatically. (Assigning groups needs an Entra ID P1 licence, which education tenants usually have.)
+3. Make sure the same groups are entered in Modelarr (Settings → Schools and Microsoft). Modelarr in turn refuses everyone who is in none of those groups.
 
-Zo zijn er twee sloten: Microsoft laat alleen toegewezen groepen toe, en Modelarr bepaalt daarna rol en school uit dezelfde groepen.
+That gives two locks: Microsoft only lets assigned groups in, and Modelarr then determines role and school from the same groups.
 
-### Eerste keer inloggen van een nieuwe gebruiker
+### First sign-in of a new user
 
-Bij de allereerste login van een nieuwe gebruiker kan een foutmelding verschijnen. Vernieuw dan de pagina (F5) of klik opnieuw op *Inloggen met Microsoft*: de tweede keer werkt het wel, en daarna blijft het werken. Het account is bij de eerste poging al aangemaakt. Zeg dit tegen nieuwe gebruikers. Komt de melding bij iedereen elke keer terug, controleer dan of de persoon in de juiste groep zit en of die groep aan de Enterprise-applicatie is toegewezen.
+At the very first sign-in of a new user an error message can appear. Refresh the page (F5) or click *Sign in with Microsoft* again: the second time it works, and it keeps working after that. The account was already created on the first attempt. Tell this to new users. If the message comes back every time for everyone, check whether the person is in the right group and whether that group is assigned to the Enterprise application.
 
-Achter een reverse proxy: vul bij *Publiek adres* het https-adres in dat gebruikers zien, anders klopt de omleidings-URL niet.
+Behind a reverse proxy: enter the https address that users see under *Public address*, otherwise the redirect URL will not match.
 
-## Melding voor medewerkers
+## Notification for staff
 
-Modelarr verstuurt geen e-mail. In plaats daarvan krijgt een medewerker (en een beheerder) een pop-up rechtsonder in beeld zodra er printaanvragen of meldingen openstaan: direct na het inloggen, en daarna opnieuw als er nieuwe bijkomen. Met een knop ga je naar de aanvragen of de meldingen; *Niet nu* sluit de pop-up tot er weer iets nieuws is. Bij een medewerker telt alleen de eigen school. De pop-up verschijnt alleen zolang Modelarr open staat in de browser.
+Modelarr sends no email. Instead a staff member (and an administrator) gets a pop-up at the bottom right as soon as there are open print requests or reports: right after signing in, and again when new ones arrive. A button takes you to the requests or the reports; *Not now* closes the pop-up until something new comes in. For a staff member only their own school counts. The pop-up only appears while Modelarr is open in the browser.
 
-## Leerlingen verwijderen
+## Deleting students
 
-Op de pagina Leerlingen: een prullenbak-knop per leerling, selectievakjes met "Verwijder geselecteerde" (bijvoorbeeld een hele klas, filter eerst op klas) en "Verwijder alle gedeactiveerde leerlingen" (zet eerst Actief uit bij wie weg moet, of na de CSV-import van een nieuw schooljaar).
+On the Students page: a bin button per student, checkboxes with "Delete selected" (for example a whole class; filter by class first) and "Delete all deactivated students" (first turn off Active for those who have to go, or after the CSV import of a new school year).
 
-- **Standaard blijven de bestanden bewaard.** Het account verdwijnt; de map en de modellen blijven in de bibliotheek staan, zonder eigenaar en niet meer gedeeld (alleen medewerkers en beheerders zien ze).
-- **Met het vinkje "Ook alle bestanden verwijderen"** gaat de map van de leerling naar `<root>/.prullenbak` en verdwijnen de modellen uit de bibliotheek. Je kunt de map daar zelf terugzetten of definitief wissen.
-- Open printaanvragen van de leerling worden geannuleerd; afgehandelde aanvragen en meldingen blijven staan (afzender: "Verwijderde leerling").
-- Een medewerker verwijdert alleen leerlingen van de eigen school; de beheerder kiest eerst een school.
-- Microsoft-leerlingen: haal ze ook uit de groep in Entra, anders wordt het account bij de volgende inlog opnieuw (leeg) aangemaakt.
+- **By default the files are kept.** The account disappears; the folder and the models stay in the library, without an owner and no longer shared (only staff and administrators see them).
+- **With the checkbox "Also delete all files"**, the student's folder goes to `<root>/.prullenbak` (trash) and the models disappear from the library. You can put the folder back there yourself or delete it for good.
+- Open print requests from the student are cancelled; finished requests and reports stay (sender: "Deleted student").
+- A staff member only deletes students of their own school; the administrator chooses a school first.
+- Microsoft students: also remove them from the group in Entra, otherwise the account is created again (empty) at the next sign-in.
 
-## Nog niet gebouwd
+## Not built yet
 
-- Bambuddy per school en beperking van de kleurkeuze tot de aanwezige filamenten
-- Per-school beheer van medewerkers door een medewerker
-- Hetzelfde voor de gewone Modelarr (alleen de school-versie heeft nu Microsoft-login)
+- Bambuddy per school and limiting the colour choice to the filaments that are present
+- Managing staff per school by a staff member
+- The same for regular Modelarr (only the school version has Microsoft sign-in for now)

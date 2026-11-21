@@ -728,7 +728,12 @@ window.I18N_EN = {
 "Zet de app niet rechtstreeks op internet: gebruik daarvoor HTTPS, bijvoorbeeld via de reverse proxy van je NAS. Wachtwoorden worden versleuteld opgeslagen; na 5 foute pogingen is inloggen 10 minuten geblokkeerd.": "Do not expose the app directly to the internet: use HTTPS for that, for example via your NAS reverse proxy. Passwords are stored encrypted; after 5 failed attempts logging in is blocked for 10 minutes.",
 "Licht": "Light",
 "Donker": "Dark",
-"Automatisch": "Automatic"
+"Automatisch": "Automatic",
+"Toon wachtwoord": "Show password",
+"Aanvrager": "Requester",
+"Opmerking aan aanvrager": "Note to the requester",
+"In de wacht": "On hold",
+"Mijn aanvragen": "My requests"
 },
 "phrases": [
 [
@@ -1697,6 +1702,16 @@ window.I18N_EN = {
 "plaat (\\d+) bestaat niet in dit bestand",
 "",
 "plate $1 does not exist in this file"
+],
+[
+"^Nieuw wachtwoord voor (.+?) \\(minstens 8 tekens\\):$",
+"",
+"New password for $1 (at least 8 characters):"
+],
+[
+"^Het wachtwoord moet minstens (\\d+) tekens hebben$",
+"",
+"The password must be at least $1 characters"
 ]
 ]
 };
