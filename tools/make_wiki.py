@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Maakt de GitHub-wiki (map `wiki/`) uit README.md (Nederlands) en README-EN.md (Engels). De README's blijven de bron:
+"""Maakt de GitHub-wiki (map `wiki/`) uit README.md (Engels) en README-NL.md (Nederlands). De README's blijven de bron:
 pas die aan en draai dit script opnieuw. Gebruik:  python tools/make_wiki.py [uitvoermap]   (standaard: ./wiki)
 Een GitHub-wiki is een aparte git-repository (<repo>.wiki.git) met gewone Markdown-bestanden: kopieer de inhoud van de uitvoermap erheen."""
 import os, re, shutil, sys
@@ -33,28 +33,28 @@ PAGES = [
     ('Installation-Docker', 'Installation: Docker on Linux or PC', 'Installatie-Docker', 'Installatie: Docker op Linux of pc', [('u', 2, 1)]),
     ('Installation-Proxmox-LXC', 'Installation: Proxmox LXC', 'Installatie-Proxmox-LXC', 'Installatie: Proxmox LXC', [('u', 2, 2)]),
     ('Configuration', 'Configuration', 'Configuratie', 'Configuratie', [('s', 3)]),
-    ('Updating', 'Updating', 'Bijwerken', 'Bijwerken', [('s', 27)]),
+    ('Updating', 'Updating', 'Bijwerken', 'Bijwerken', [('s', 28)]),
     ('Moving-and-Migrating', 'Moving and migrating', 'Verhuizen-en-migreren', 'Verhuizen en migreren', [('s', 20)]),
     ('Scanning-and-Search', 'Scanning and search', 'Scannen-en-zoeken', 'Scannen en zoeken', [('s', 5), ('s', 6)]),
     ('Organizing', 'Organizing the library', 'Indelen', 'De bibliotheek indelen', [('s', 8)]),
     ('Duplicates-and-Trash', 'Duplicates and trash', 'Duplicaten-en-prullenbak', 'Duplicaten en prullenbak', [('s', 7)]),
     ('Notes-and-Favorites', 'Notes, favorites and print status', 'Notities-en-favorieten', 'Notities, favorieten en printstatus', [('s', 10)]),
-    ('Thumbnails-and-File-Types', 'Thumbnails and file types', 'Thumbnails-en-bestandstypen', 'Thumbnails en bestandstypen', [('s', 11), ('s', 12), ('s', 13), ('s', 19), ('s', 26)]),
+    ('Thumbnails-and-File-Types', 'Thumbnails and file types', 'Thumbnails-en-bestandstypen', 'Thumbnails en bestandstypen', [('s', 11), ('s', 12), ('s', 13), ('s', 19), ('s', 27)]),
     ('Printers-and-Slicers', 'Printers, plates and slicers', 'Printers-en-slicers', 'Printers, platen en slicers', [('s', 14), ('s', 16), ('s', 15), ('s', 18)]),
     ('Print-Log-and-Spoolman', 'Print log and Spoolman', 'Printlogboek-en-Spoolman', 'Printlogboek en Spoolman', [('s', 17)]),
     ('Bambuddy', 'Bambuddy integration', 'Bambuddy', 'Bambuddy-koppeling', [('s', 4)]),
     ('Users-and-Security', 'Users and security', 'Gebruikers-en-beveiliging', 'Gebruikers en beveiliging', [('s', 21), ('s', 9)]),
     ('API', 'API and integrations', 'API', 'API en koppelingen', [('s', 22)]),
     ('Backups', 'Backups', 'Back-ups', 'Back-ups', [('s', 23)]),
-    ('Language', 'Language', 'Taal', 'Taal', [('s', 24)]),
-    ('Development', 'Development and tests', 'Ontwikkeling-en-tests', 'Ontwikkeling en tests', [('s', 25)]),
+    ('Language', 'Language', 'Taal', 'Taal', [('s', 24), ('s', 25)]),
+    ('Development', 'Development and tests', 'Ontwikkeling-en-tests', 'Ontwikkeling en tests', [('s', 26)]),
 ]
-L = {'en': dict(path='README-EN.md', home='Home', homet='Home', prefix='', other='Nederlands', flag='🇳🇱', back='Back to Home', lic=28),
-     'nl': dict(path='README.md', home='NL-Home', homet='Home (Nederlands)', prefix='NL-', other='English', flag='🇬🇧', back='Terug naar Home', lic=28)}
+L = {'en': dict(path='README.md', home='Home', homet='Home', prefix='', other='Nederlands', flag='🇳🇱', back='Back to Home', lic=28),
+     'nl': dict(path='README-NL.md', home='NL-Home', homet='Home (Nederlands)', prefix='NL-', other='English', flag='🇬🇧', back='Terug naar Home', lic=28)}
 data = {k: parse(os.path.join(ROOT, v['path'])) for k, v in L.items()}
 a, b = data['en'][1], data['nl'][1]
-assert len(a) == len(b) and [len(x['subs']) for x in a] == [len(x['subs']) for x in b], 'README.md en README-EN.md hebben niet dezelfde opbouw'
-used = {n for p in PAGES for part in p[4] for n in ([part[1]] if part[0] != 'u' else [])} | {2, 28}
+assert len(a) == len(b) and [len(x['subs']) for x in a] == [len(x['subs']) for x in b], 'README.md en README-NL.md hebben niet dezelfde opbouw'
+used = {n for p in PAGES for part in p[4] for n in ([part[1]] if part[0] != 'u' else [])} | {2, 29}
 assert used == set(range(1, len(a) + 1)), f'secties zonder pagina: {sorted(set(range(1, len(a) + 1)) - used)}'
 
 def page_of(n):  # sectienummer -> pagina
@@ -62,7 +62,7 @@ def page_of(n):  # sectienummer -> pagina
 def xref(lang, text):
     """zie "Back-ups" -> zie [Back-ups](pagina): koppen van de README worden links naar de bijbehorende wikipagina."""
     for n, sec in enumerate(data[lang][1], 1):
-        if n in (2,) or n == 28:
+        if n in (2,) or n == 29:
             continue
         pg = page_of(n)
         text = re.sub(r'\b(zie|see|Zie|See) "' + re.escape(sec['title']) + '"', lambda m: f'{m.group(1)} [{sec["title"]}]({slug(lang, pg)})', text)
@@ -110,5 +110,5 @@ side = ['**Modelarr**', '', '[Home](Home) · [Home (NL)](NL-Home)', '', '<detail
 side += [f'- {link("en", p)}' for p in PAGES] + ['', '</details>', '', '<details><summary><b>Nederlands</b></summary>', '']
 side += [f'- {link("nl", p)}' for p in PAGES] + ['', '</details>']
 write('_Sidebar', '\n'.join(side))
-write('_Footer', 'Modelarr is MIT-licensed · documentation is generated from README.md / README-EN.md (`tools/make_wiki.py`).')
+write('_Footer', 'Modelarr is MIT-licensed · documentation is generated from README.md / README-NL.md (`tools/make_wiki.py`).')
 print(f'{len(os.listdir(OUT))} bestanden in {OUT}')
